@@ -684,10 +684,53 @@ export const DeploymentRoadmap: React.FC<DeploymentRoadmapProps> = ({
             </div>
           </div>
 
-          <p className="text-[11px] text-stone-500 mt-4">
+          <p className="text-[11px] text-stone-500 mt-4 mb-6">
             💡 <em>İpucu:</em> DNS kayıtlarını kaydettikten sonra tüm dünyada aktif olması genellikle 5 ile 30 dakika arasında sürer. 
             Bu süre sonunda `https://{domain}` adresiniz yeşil kilitli (SSL) olarak açılacaktır.
           </p>
+
+          {/* TürkTicaret Özel Rehber Kutusu */}
+          <div className="p-5 bg-gradient-to-br from-red-50/50 via-white to-amber-50/40 rounded-xl border-2 border-red-200/80">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-red-600 text-white font-mono">
+                turkticaret.net
+              </span>
+              <h4 className="font-display font-bold text-sm text-stone-900">
+                TürkTicaret Panelinde Adım Adım Nasıl Yapılır?
+              </h4>
+            </div>
+            <ol className="text-xs text-stone-700 space-y-2.5 list-decimal pl-4 pt-1">
+              <li>
+                <strong>Müşteri Paneline Giriş:</strong> <code className="bg-stone-100 px-1 py-0.5 rounded text-stone-900">turkticaret.net</code> adresine gidip kullanıcı adınızla giriş yapın.
+              </li>
+              <li>
+                <strong>Domain Yönetimi:</strong> Üst menüden <strong>"Müşteri Paneli"</strong> &rarr; <strong>"Alan Adlarım"</strong> bölümüne gidin.
+              </li>
+              <li>
+                <strong>İlgili Alan Adı:</strong> Kızınızın alan adının ({domain}) karşısındaki <strong>"Yönet"</strong> veya <strong>"İşlemler"</strong> butonuna tıklayın.
+              </li>
+              <li>
+                <strong>DNS Yönetimine Girin:</strong> Sol veya açılan menüden <strong>"DNS Yönetimi"</strong> (veya <em>"Gelişmiş DNS / DNS Kayıtları"</em>) sekmesine tıklayın.<br/>
+                <span className="text-[11px] text-stone-500 italic">*(Not: Alan adınız TürkTicaret'in kendi varsayılan NameServer'larında olmalıdır: ns1.turkticaret.net).*</span>
+              </li>
+              <li>
+                <strong>A Kaydını Girin:</strong> 
+                <div className="mt-1 p-2 bg-white rounded border border-stone-200 font-mono text-[11px]">
+                  Kayıt Türü: <strong>A</strong> | Host / Ad: <strong>@</strong> (veya boş bırakın) | Hedef / IP: <strong className="text-emerald-700">76.76.21.21</strong>
+                </div>
+                <span className="text-[11px] text-amber-800">Eğer önceden tanımlı eski bir A kaydı varsa onu "Düzenle" diyerek bu IP ile değiştirin veya silip yenisini ekleyin.</span>
+              </li>
+              <li>
+                <strong>CNAME Kaydını Girin:</strong> 
+                <div className="mt-1 p-2 bg-white rounded border border-stone-200 font-mono text-[11px]">
+                  Kayıt Türü: <strong>CNAME</strong> | Host / Ad: <strong>www</strong> | Hedef Değer: <strong className="text-emerald-700">cname.vercel-dns.com</strong>
+                </div>
+              </li>
+              <li>
+                <strong>Vercel'de Onay:</strong> Vercel proje panelinizdeki <strong>Settings &rarr; Domains</strong> sayfasına dönüp <strong>"Refresh"</strong> butonuna basın. 5-15 dakika içinde yeşil onay işareti çıkacak ve SSL sertifikanız otomatik yüklenecektir!
+              </li>
+            </ol>
+          </div>
         </section>
 
         {/* Action Bottom Bar */}
