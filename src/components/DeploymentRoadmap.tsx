@@ -37,7 +37,7 @@ export const DeploymentRoadmap: React.FC<DeploymentRoadmapProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const domain = config.customDomain || 'kizinizinadi.com';
+  const domain = config.customDomain || 'nisanaydin.com';
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-stone-900 pb-24">

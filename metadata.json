@@ -1,6 +1,6 @@
 {
-  "name": "Kızım İçin Web Sitesi Stüdyosu & Dağıtım Rehberi",
-  "description": "Kızınızın adına özel modern, minimalist, mobil uyumlu web sitesi, canlı admin paneli ve Vercel/Domain dağıtım yol haritası.",
+  "name": "Nisan Aydın — Kişisel Web Sitesi & Yönetim Stüdyosu",
+  "description": "Nisan Aydın adına özel modern, minimalist, mobil uyumlu web sitesi, Supabase güvenli admin paneli ve çocuk eğitici oyun odası.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -14,22 +14,50 @@ import { DaughterSiteView } from './components/DaughterSiteView';
 import { AdminPanel } from './components/AdminPanel';
 import { DeploymentRoadmap } from './components/DeploymentRoadmap';
 import { CodeExportModal } from './components/CodeExportModal';
+import { AdminLoginModal } from './components/AdminLoginModal';
 
 export default function App() {
-  // Load state with localStorage fallback
+  // Load state with localStorage fallback (updates to Nisan Aydın if old name present)
   const [config, setConfig] = useState<SiteConfig>(() => {
     const saved = localStorage.getItem('daughter_site_config');
-    return saved ? JSON.parse(saved) : initialSiteConfig;
+    if (!saved) return initialSiteConfig;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.daughterName === 'Lina Aydın') {
+        return initialSiteConfig;
+      }
+      return parsed;
+    } catch {
+      return initialSiteConfig;
+    }
   });
 
   const [milestones, setMilestones] = useState<Milestone[]>(() => {
     const saved = localStorage.getItem('daughter_site_milestones');
-    return saved ? JSON.parse(saved) : initialMilestones;
+    if (!saved) return initialMilestones;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed[0]?.title?.includes('Lina')) {
+        return initialMilestones;
+      }
+      return parsed;
+    } catch {
+      return initialMilestones;
+    }
   });
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
     const saved = localStorage.getItem('daughter_site_blog');
-    return saved ? JSON.parse(saved) : initialBlogPosts;
+    if (!saved) return initialBlogPosts;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed[0]?.content?.includes('Lina')) {
+        return initialBlogPosts;
+      }
+      return parsed;
+    } catch {
+      return initialBlogPosts;
+    }
   });
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
@@ -41,6 +69,13 @@ export default function App() {
     const saved = localStorage.getItem('daughter_site_guestbook');
     return saved ? JSON.parse(saved) : initialGuestbook;
   });
+
+  // Admin authentication state
+  const [adminUser, setAdminUser] = useState<{ username: string; fullName: string; role: string } | null>(() => {
+    const saved = sessionStorage.getItem('nisan_admin_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Current view mode: 'site' | 'admin' | 'roadmap'
   const [activeView, setActiveView] = useState<'site' | 'admin' | 'roadmap'>('site');
@@ -77,6 +112,31 @@ export default function App() {
     setGuestbook([newEntry, ...guestbook]);
   };
 
+  const handleRequestView = (view: 'site' | 'admin' | 'roadmap') => {
+    if (view === 'admin') {
+      if (adminUser) {
+        setActiveView('admin');
+      } else {
+        setIsLoginModalOpen(true);
+      }
+    } else {
+      setActiveView(view);
+    }
+  };
+
+  const handleLoginSuccess = (user: { username: string; fullName: string; role: string }) => {
+    setAdminUser(user);
+    sessionStorage.setItem('nisan_admin_user', JSON.stringify(user));
+    setIsLoginModalOpen(false);
+    setActiveView('admin');
+  };
+
+  const handleLogout = () => {
+    setAdminUser(null);
+    sessionStorage.removeItem('nisan_admin_user');
+    setActiveView('site');
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col font-sans selection:bg-rose-100 selection:text-rose-900">
       
@@ -84,7 +144,7 @@ export default function App() {
       <Navbar
         config={config}
         activeView={activeView}
-        setActiveView={setActiveView}
+        setActiveView={handleRequestView}
         onOpenExport={() => setIsExportOpen(true)}
       />
 
@@ -98,7 +158,7 @@ export default function App() {
             gallery={gallery}
             guestbook={guestbook}
             onAddGuestbookEntry={handleAddGuestbookEntry}
-            onOpenAdmin={() => setActiveView('admin')}
+            onOpenAdmin={() => handleRequestView('admin')}
           />
         )}
 
@@ -115,6 +175,8 @@ export default function App() {
             guestbook={guestbook}
             onUpdateGuestbook={setGuestbook}
             onClose={() => setActiveView('site')}
+            adminUser={adminUser}
+            onLogout={handleLogout}
           />
         )}
 
@@ -126,6 +188,13 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Supabase Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
 
       {/* Code Export Modal */}
       {isExportOpen && (
