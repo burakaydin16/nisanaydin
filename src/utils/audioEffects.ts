@@ -1,22 +1,39 @@
-// Procedural Web Audio API sound generator for tactile feedback (zero external audio files needed)
+// Procedural Web Audio API sound generator for tactile feedback
+// Completely silent by default. Only activates when user explicitly toggles sound on in the game page.
 
 class AudioManager {
   private ctx: AudioContext | null = null;
-  public soundEnabled: boolean = true;
-  public voiceEnabled: boolean = true;
+  public soundEnabled: boolean = false;
+  public voiceEnabled: boolean = false;
 
   private getContext(): AudioContext | null {
-    if (typeof window === 'undefined') return null;
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
+    if (!this.soundEnabled || typeof window === 'undefined') return null;
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      return this.ctx;
+    } catch {
+      return null;
+    }
+  }
+
+  muteAll() {
+    this.soundEnabled = false;
+    this.voiceEnabled = false;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // ignore
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
-    return this.ctx;
   }
 
   playPop() {
@@ -31,7 +48,7 @@ class AudioManager {
       osc.frequency.setValueAtTime(400, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
 
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
 
       osc.connect(gain);
@@ -57,14 +74,14 @@ class AudioManager {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.08);
         
-        gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.3);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.25);
         
         osc.connect(gain);
         gain.connect(ctx.destination);
         
         osc.start(ctx.currentTime + i * 0.08);
-        osc.stop(ctx.currentTime + i * 0.08 + 0.3);
+        osc.stop(ctx.currentTime + i * 0.08 + 0.25);
       });
     } catch {
       // AudioContext unavailable
@@ -82,33 +99,35 @@ class AudioManager {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(frequency, ctx.currentTime);
 
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start();
-      osc.stop(ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + 0.12);
     } catch {
       // AudioContext unavailable
     }
   }
 
   speak(text: string, lang: string = 'en-US') {
-    if (!this.voiceEnabled) return;
+    if (!this.soundEnabled || !this.voiceEnabled) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
-      utterance.rate = 0.92; // Clear, enthusiastic, child-friendly articulation
-      utterance.pitch = 1.15; // Friendly, encouraging tone
+      utterance.rate = 0.92;
+      utterance.pitch = 1.15;
 
       const voices = window.speechSynthesis.getVoices();
       if (voices && voices.length > 0) {
-        // Try finding natural English female/warm voice
-        const englishVoice = voices.find(v => (v.lang.startsWith('en') || v.lang === 'en-US' || v.lang === 'en-GB') && (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Victoria') || v.name.includes('Karen') || v.name.includes('Zira')));
+        const englishVoice = voices.find(v => 
+          (v.lang.startsWith('en') || v.lang === 'en-US' || v.lang === 'en-GB') && 
+          (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Victoria'))
+        );
         if (englishVoice) {
           utterance.voice = englishVoice;
         }

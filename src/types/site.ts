@@ -20,6 +20,7 @@ export interface SiteConfig {
   protectionEnabled: boolean;
   pinCode: string;
   kidsPlaygroundEnabled?: boolean;
+  heroImageUrl?: string;
 }
 
 export interface Milestone {
@@ -32,6 +33,7 @@ export interface Milestone {
   location?: string;
   photoColor?: string;
   highlight?: boolean;
+  imageUrl?: string;
 }
 
 export interface BlogPost {
@@ -55,6 +57,7 @@ export interface GalleryItem {
   aspectRatio: 'square' | 'wide' | 'tall';
   bgGradient: string;
   iconType: 'camera' | 'palette' | 'heart' | 'star' | 'music' | 'sun';
+  imageUrl?: string;
 }
 
 export interface GuestbookEntry {

@@ -1,211 +1,154 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, LayoutDashboard, Compass, ExternalLink, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Menu, X, Heart } from 'lucide-react';
 import { SiteConfig } from '../types/site';
+import { AppRoute } from '../types/routes';
 
 interface NavbarProps {
   config: SiteConfig;
-  activeView: 'site' | 'admin' | 'roadmap';
-  setActiveView: (view: 'site' | 'admin' | 'roadmap') => void;
-  onOpenExport: () => void;
+  currentRoute: AppRoute;
+  onNavigate: (route: AppRoute) => void;
+  adminUser: { username: string; fullName: string; role: string } | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   config,
-  activeView,
-  setActiveView,
-  onOpenExport,
+  currentRoute,
+  onNavigate,
+  adminUser,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const navItems: { route: AppRoute; label: string; icon?: React.ReactNode; isSpecial?: boolean }[] = [
+    { route: '/', label: 'Ana Sayfa' },
+    { route: '/anilar', label: 'Anılarımız' },
+    { route: '/galeri', label: 'Galeri' },
+    { route: '/mektuplar', label: 'Mektuplar & Defter' },
+    { 
+      route: '/oyun', 
+      label: 'Oyun Odası', 
+      icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" />,
+      isSpecial: true 
+    },
+  ];
+
+  const handleLinkClick = (route: AppRoute) => {
+    onNavigate(route);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-8 h-16">
-          {/* Zone 1: Single text element wordmark */}
+        <div className="flex items-center justify-between gap-6 h-16">
+          
+          {/* Logo / Brand Name */}
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => setActiveView('site')}
-              className="text-left font-display font-bold text-lg text-stone-900 tracking-tight hover:text-stone-700 transition-colors whitespace-nowrap"
+              onClick={() => handleLinkClick('/')}
+              className="group flex items-center gap-2 text-left font-display font-bold text-lg text-stone-900 tracking-tight hover:text-stone-700 transition-colors whitespace-nowrap"
             >
-              {config.customDomain || config.daughterName}
+              <span className="w-7 h-7 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 group-hover:scale-105 transition-transform">
+                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+              </span>
+              <span>{config.daughterName}</span>
             </button>
             <span className="hidden sm:inline-block text-xs text-stone-400 font-mono">
-              / {config.daughterName}
+              / Aile Arşivi
             </span>
           </div>
 
-          {/* Zone 2: 4-5 clean single-line nav links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-            {activeView === 'site' ? (
-              <>
-                <a href="#hikaye" className="hover:text-stone-950 transition-colors whitespace-nowrap shrink-0">
-                  Hikaye
-                </a>
-                <a href="#kilometre-taslari" className="hover:text-stone-950 transition-colors whitespace-nowrap shrink-0">
-                  Kilometre Taşları
-                </a>
-                <a href="#galeri" className="hover:text-stone-950 transition-colors whitespace-nowrap shrink-0">
-                  Fotoğraflar
-                </a>
-                <a href="#oyunlar" className="hover:text-rose-700 text-rose-800 font-semibold transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>English Kids Lab (4.5 Yaş)</span>
-                </a>
-                <a href="#mektuplar" className="hover:text-stone-950 transition-colors whitespace-nowrap shrink-0">
-                  Mektuplar & Blog
-                </a>
-                <a href="#ani-defteri" className="hover:text-stone-950 transition-colors whitespace-nowrap shrink-0">
-                  Anı Defteri
-                </a>
-              </>
-            ) : (
-              <span className="text-xs text-stone-500 font-normal">
-                {activeView === 'admin'
-                  ? 'Yönetim Modu: İçerik, SEO ve site ayarları anında güncellenir'
-                  : 'Rehber Modu: Alan adı, DNS ve teknik kurulum adımları'}
-              </span>
-            )}
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium text-stone-600">
+            {navItems.map((item) => {
+              const isActive = currentRoute === item.route;
+              return (
+                <button
+                  key={item.route}
+                  onClick={() => handleLinkClick(item.route)}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    isActive
+                      ? item.isSpecial
+                        ? 'bg-rose-100 text-rose-900 font-semibold shadow-2xs'
+                        : 'bg-stone-900 text-white font-semibold shadow-2xs'
+                      : item.isSpecial
+                        ? 'text-rose-800 hover:bg-rose-50 font-medium'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Zone 3: 1 primary action area */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Action Zone: Admin Access */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setActiveView(activeView === 'roadmap' ? 'site' : 'roadmap')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-                activeView === 'roadmap'
-                  ? 'bg-amber-100 text-amber-900 font-semibold'
-                  : 'text-stone-700 hover:bg-stone-100'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Kurulum &</span> Dağıtım Rehberi
-            </button>
-
-            <button
-              onClick={() => setActiveView(activeView === 'admin' ? 'site' : 'admin')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-                activeView === 'admin'
+              onClick={() => handleLinkClick('/admin')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 shadow-2xs ${
+                currentRoute === '/admin'
                   ? 'bg-stone-900 text-white'
-                  : 'bg-stone-100 text-stone-900 hover:bg-stone-200'
+                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200 hover:text-stone-900'
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              {activeView === 'admin' ? 'Siteye Dön' : 'Admin Paneli'}
+              <span>{adminUser ? 'Yönetim Paneli' : 'Yönetici Girişi'}</span>
             </button>
 
-            <button
-              onClick={onOpenExport}
-              title="Hazır Proje Kodunu Dışa Aktar"
-              className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 text-xs text-stone-600 hover:text-stone-950 border border-stone-200 rounded-lg hover:border-stone-300 transition-colors whitespace-nowrap"
-            >
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>Dışa Aktar</span>
-            </button>
-
-            {/* Mobile menu button */}
+            {/* Mobile hamburger button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 text-stone-600 hover:text-stone-900"
-              aria-label="Menü"
+              className="md:hidden p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
+              aria-label="Menüyü Aç"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
+
         </div>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-stone-200 bg-white px-4 pt-2 pb-4 space-y-2">
-          {activeView === 'site' && (
-            <div className="flex flex-col space-y-2 text-sm font-medium text-stone-700 pb-2 border-b border-stone-100">
-              <a
-                href="#hikaye"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-stone-950"
+        <div className="md:hidden border-b border-stone-200 bg-white px-4 pt-3 pb-4 space-y-1 shadow-lg animate-in slide-in-from-top-2">
+          {navItems.map((item) => {
+            const isActive = currentRoute === item.route;
+            return (
+              <button
+                key={item.route}
+                onClick={() => handleLinkClick(item.route)}
+                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${
+                  isActive
+                    ? item.isSpecial
+                      ? 'bg-rose-100 text-rose-900 font-semibold'
+                      : 'bg-stone-900 text-white font-semibold'
+                    : item.isSpecial
+                      ? 'text-rose-800 hover:bg-rose-50'
+                      : 'text-stone-700 hover:bg-stone-100'
+                }`}
               >
-                Hikaye & Tanıtım
-              </a>
-              <a
-                href="#kilometre-taslari"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-stone-950"
-              >
-                Kilometre Taşları
-              </a>
-              <a
-                href="#galeri"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-stone-950"
-              >
-                Fotoğraflar
-              </a>
-              <a
-                href="#oyunlar"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 font-semibold text-rose-800 flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>English Kids Lab (4.5 Yaş) 🚀</span>
-              </a>
-              <a
-                href="#mektuplar"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-stone-950"
-              >
-                Mektuplar & Blog
-              </a>
-              <a
-                href="#ani-defteri"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-stone-950"
-              >
-                Anı Defteri
-              </a>
-            </div>
-          )}
-          <div className="pt-2 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+                <span className="text-xs font-mono opacity-60">{item.route}</span>
+              </button>
+            );
+          })}
+
+          <div className="pt-2 border-t border-stone-100 mt-2">
             <button
-              onClick={() => {
-                setActiveView('site');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 text-sm rounded-lg ${
-                activeView === 'site' ? 'bg-stone-100 font-semibold' : 'text-stone-700'
+              onClick={() => handleLinkClick('/admin')}
+              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${
+                currentRoute === '/admin' ? 'bg-stone-900 text-white font-semibold' : 'text-stone-700 hover:bg-stone-100'
               }`}
             >
-              Canlı Siteyi İncele
-            </button>
-            <button
-              onClick={() => {
-                setActiveView('admin');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 text-sm rounded-lg ${
-                activeView === 'admin' ? 'bg-stone-900 text-white font-semibold' : 'text-stone-700'
-              }`}
-            >
-              Admin Paneli (İçerik Yönetimi)
-            </button>
-            <button
-              onClick={() => {
-                setActiveView('roadmap');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 text-sm rounded-lg ${
-                activeView === 'roadmap' ? 'bg-amber-100 text-amber-900 font-semibold' : 'text-stone-700'
-              }`}
-            >
-              Kurulum & Alan Adı (DNS) Rehberi
-            </button>
-            <button
-              onClick={() => {
-                onOpenExport();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left px-3 py-2 text-sm rounded-lg border border-stone-200 text-stone-700"
-            >
-              Projeyi ve Kodları İndir / Kopyala
+              <div className="flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4" />
+                <span>{adminUser ? 'Yönetim Paneli' : 'Yönetici Girişi'}</span>
+              </div>
+              <span className="text-xs font-mono opacity-60">/admin</span>
             </button>
           </div>
         </div>

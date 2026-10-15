@@ -10,17 +10,24 @@ import {
   initialGallery, initialGuestbook 
 } from './data/defaultData';
 import { Navbar } from './components/Navbar';
-import { DaughterSiteView } from './components/DaughterSiteView';
+import { HomePage } from './pages/HomePage';
+import { MilestonesPage } from './pages/MilestonesPage';
+import { GalleryPage } from './pages/GalleryPage';
+import { LettersPage } from './pages/LettersPage';
+import { GamePage } from './pages/GamePage';
 import { AdminPanel } from './components/AdminPanel';
-import { DeploymentRoadmap } from './components/DeploymentRoadmap';
-import { CodeExportModal } from './components/CodeExportModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { supabaseService } from './services/supabase';
+import { useAppRouter } from './hooks/useAppRouter';
+import { AppRoute } from './types/routes';
+import { Shield, Lock } from 'lucide-react';
 
 export default function App() {
+  const { currentRoute, navigate } = useAppRouter();
+
   // Clear any old mock demo data stored from previous sessions to respect user's privacy request
   useEffect(() => {
-    const versionKey = 'nisan_privacy_clean_v2';
+    const versionKey = 'nisan_privacy_clean_v3';
     if (!localStorage.getItem(versionKey)) {
       localStorage.removeItem('daughter_site_milestones');
       localStorage.removeItem('daughter_site_blog');
@@ -111,10 +118,6 @@ export default function App() {
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // Current view mode: 'site' | 'admin' | 'roadmap'
-  const [activeView, setActiveView] = useState<'site' | 'admin' | 'roadmap'>('site');
-  const [isExportOpen, setIsExportOpen] = useState(false);
-
   // Sync state changes to localStorage
   useEffect(() => {
     localStorage.setItem('daughter_site_config', JSON.stringify(config));
@@ -142,7 +145,7 @@ export default function App() {
       id: `gb-${Date.now()}`,
       ...entryData,
       date: formattedDate,
-      approved: false, // requires admin approval
+      approved: false,
     };
 
     // Update local state immediately
@@ -157,15 +160,11 @@ export default function App() {
     });
   };
 
-  const handleRequestView = (view: 'site' | 'admin' | 'roadmap') => {
-    if (view === 'admin') {
-      if (adminUser) {
-        setActiveView('admin');
-      } else {
-        setIsLoginModalOpen(true);
-      }
+  const handleOpenAdmin = () => {
+    if (adminUser) {
+      navigate('/admin');
     } else {
-      setActiveView(view);
+      setIsLoginModalOpen(true);
     }
   };
 
@@ -173,85 +172,134 @@ export default function App() {
     setAdminUser(user);
     sessionStorage.setItem('nisan_admin_user', JSON.stringify(user));
     setIsLoginModalOpen(false);
-    setActiveView('admin');
+    navigate('/admin');
   };
 
   const handleLogout = () => {
     setAdminUser(null);
     sessionStorage.removeItem('nisan_admin_user');
-    setActiveView('site');
+    navigate('/');
   };
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col font-sans selection:bg-rose-100 selection:text-rose-900">
       
-      {/* 3-Zone Navigation Header */}
+      {/* Multi-Page Navigation Header with clean / paths */}
       <Navbar
         config={config}
-        activeView={activeView}
-        setActiveView={handleRequestView}
-        onOpenExport={() => setIsExportOpen(true)}
+        currentRoute={currentRoute}
+        onNavigate={navigate}
+        adminUser={adminUser}
       />
 
-      {/* Main View Router */}
-      <main className="flex-1">
-        {activeView === 'site' && (
-          <DaughterSiteView
+      {/* Path-based Multi-Page Views */}
+      <main className="flex-1 flex flex-col">
+        {currentRoute === '/' && (
+          <HomePage
             config={config}
             milestones={milestones}
             blogPosts={blogPosts}
             gallery={gallery}
+            guestbook={guestbook}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
+          />
+        )}
+
+        {currentRoute === '/anilar' && (
+          <MilestonesPage
+            config={config}
+            milestones={milestones}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
+          />
+        )}
+
+        {currentRoute === '/galeri' && (
+          <GalleryPage
+            config={config}
+            gallery={gallery}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
+          />
+        )}
+
+        {currentRoute === '/mektuplar' && (
+          <LettersPage
+            config={config}
+            blogPosts={blogPosts}
             guestbook={guestbook}
             onAddGuestbookEntry={handleAddGuestbookEntry}
-            onOpenAdmin={() => handleRequestView('admin')}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
           />
         )}
 
-        {activeView === 'admin' && (
-          <AdminPanel
+        {currentRoute === '/oyun' && (
+          <GamePage
             config={config}
-            onUpdateConfig={setConfig}
-            milestones={milestones}
-            onUpdateMilestones={setMilestones}
-            blogPosts={blogPosts}
-            onUpdateBlogPosts={setBlogPosts}
-            gallery={gallery}
-            onUpdateGallery={setGallery}
-            guestbook={guestbook}
-            onUpdateGuestbook={setGuestbook}
-            onClose={() => setActiveView('site')}
-            adminUser={adminUser}
-            onLogout={handleLogout}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
           />
         )}
 
-        {activeView === 'roadmap' && (
-          <DeploymentRoadmap
-            config={config}
-            onOpenExport={() => setIsExportOpen(true)}
-            onSwitchToSite={() => setActiveView('site')}
-          />
+        {currentRoute === '/admin' && (
+          adminUser ? (
+            <AdminPanel
+              config={config}
+              onUpdateConfig={setConfig}
+              milestones={milestones}
+              onUpdateMilestones={setMilestones}
+              blogPosts={blogPosts}
+              onUpdateBlogPosts={setBlogPosts}
+              gallery={gallery}
+              onUpdateGallery={setGallery}
+              guestbook={guestbook}
+              onUpdateGuestbook={setGuestbook}
+              onClose={() => navigate('/')}
+              adminUser={adminUser}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6 py-20">
+              <div className="max-w-md w-full bg-white rounded-3xl border border-stone-200 p-8 shadow-lg text-center space-y-5">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-stone-900 text-white flex items-center justify-center shadow-sm">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-2xl text-stone-900">
+                    Yönetici Paneli Girişi
+                  </h2>
+                  <p className="text-xs text-stone-500 mt-1">
+                    İçerik, anı ve ayarları yönetmek için lütfen Supabase yetkili kullanıcı adı ve şifrenizle giriş yapın.
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-col gap-3">
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-sm font-semibold transition-all shadow-sm"
+                  >
+                    Giriş Yap
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium transition-colors"
+                  >
+                    Siteye Geri Dön
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
         )}
       </main>
 
-      {/* Admin Login Modal (clean, zero credentials on screen) */}
+      {/* Admin Login Modal (secure, checks credentials against Supabase admin_users table) */}
       <AdminLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSuccess={handleLoginSuccess}
       />
-
-      {/* Code Export Modal */}
-      {isExportOpen && (
-        <CodeExportModal
-          config={config}
-          milestones={milestones}
-          blogPosts={blogPosts}
-          gallery={gallery}
-          guestbook={guestbook}
-          onClose={() => setIsExportOpen(false)}
-        />
-      )}
 
     </div>
   );

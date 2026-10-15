@@ -14,20 +14,35 @@ type GameMode = 'phonics' | 'patterns' | 'counting' | 'shapes' | 'animals';
 
 export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) => {
   const [activeGame, setActiveGame] = useState<GameMode>('phonics');
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  // Sound is strictly disabled by default. Only turns on if user clicks 'Sesi Aç'
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [score, setScore] = useState(0);
 
   // Sync sound settings
   useEffect(() => {
     soundFx.soundEnabled = soundEnabled;
+    if (!soundEnabled) {
+      soundFx.muteAll();
+    }
   }, [soundEnabled]);
 
   useEffect(() => {
     soundFx.voiceEnabled = voiceEnabled;
+    if (!voiceEnabled) {
+      soundFx.muteAll();
+    }
   }, [voiceEnabled]);
 
+  // Clean up and ensure silence whenever user leaves or navigates away
+  useEffect(() => {
+    return () => {
+      soundFx.muteAll();
+    };
+  }, []);
+
   const speakPrompt = (text: string) => {
+    if (!soundEnabled || !voiceEnabled) return;
     soundFx.speak(text, 'en-US');
   };
 
@@ -532,61 +547,64 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
           </div>
 
           {/* Audio & Score Controls */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs font-bold shadow-sm">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs font-bold shadow-2xs">
               <Trophy className="w-4 h-4 fill-amber-400 text-amber-500" />
-              <span>{score} Stars</span>
+              <span>{score} Yıldız</span>
             </div>
 
-            {/* Repeat Audio Voiceover Button */}
-            <button
-              onClick={() => {
-                if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
-                if (activeGame === 'patterns') speakPrompt("What comes next in the pattern?");
-                if (activeGame === 'counting') speakPrompt(`How many ${currentMath.itemWord} are there in total? Let's count!`);
-                if (activeGame === 'shapes') speakPrompt(`Can you find the ${currentShape.targetName}?`);
-                if (activeGame === 'animals') speakPrompt("Match the animal pairs!");
-              }}
-              title="Hear English Prompt Again"
-              className="px-3 py-1.5 bg-white border border-stone-200 hover:border-stone-400 rounded-xl text-xs font-medium text-stone-800 flex items-center gap-1.5 shadow-sm transition-colors"
-            >
-              <Volume1 className="w-4 h-4 text-rose-600" />
-              <span className="hidden sm:inline">Repeat Voice</span>
-            </button>
-
-            {/* Sound FX Toggle */}
+            {/* Master Sound Toggle Button */}
             <button
               onClick={() => {
                 const next = !soundEnabled;
                 setSoundEnabled(next);
-                if (next) soundFx.playPop();
+                setVoiceEnabled(next);
+                soundFx.soundEnabled = next;
+                soundFx.voiceEnabled = next;
+                if (!next) {
+                  soundFx.muteAll();
+                } else {
+                  soundFx.playPop();
+                  if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
+                }
               }}
-              title={soundEnabled ? 'Mute Sounds' : 'Unmute Sounds'}
-              className={`p-2 rounded-xl border text-xs flex items-center gap-1 transition-colors ${
+              title={soundEnabled ? 'Oyun sesini kapat' : 'Oyun sesini ve İngilizce seslendirmeyi aç'}
+              className={`px-3.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all shadow-2xs ${
                 soundEnabled 
-                  ? 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50' 
-                  : 'bg-stone-100 border-stone-200 text-stone-400'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100' 
+                  : 'bg-stone-900 border-stone-900 text-white hover:bg-stone-800'
               }`}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4" />}
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <span>Ses Açık (Kapat)</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-stone-300" />
+                  <span>Oyun Sesini Aç 🔊</span>
+                </>
+              )}
             </button>
 
-            {/* Voice Speech Toggle */}
-            <button
-              onClick={() => {
-                const next = !voiceEnabled;
-                setVoiceEnabled(next);
-                if (next) speakPrompt('English audio guide is now on!');
-              }}
-              title={voiceEnabled ? 'Mute English Voice' : 'Turn On English Voice'}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                voiceEnabled 
-                  ? 'bg-rose-50 border-rose-200 text-rose-800' 
-                  : 'bg-stone-100 border-stone-200 text-stone-400'
-              }`}
-            >
-              <span>{voiceEnabled ? 'English Voice Active' : 'Voice Muted'}</span>
-            </button>
+            {/* Repeat Audio Voiceover Button (only active if sound is on) */}
+            {soundEnabled && (
+              <button
+                onClick={() => {
+                  if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
+                  if (activeGame === 'patterns') speakPrompt("What comes next in the pattern?");
+                  if (activeGame === 'counting') speakPrompt(`How many ${currentMath.itemWord} are there in total? Let's count!`);
+                  if (activeGame === 'shapes') speakPrompt(`Can you find the ${currentShape.targetName}?`);
+                  if (activeGame === 'animals') speakPrompt("Match the animal pairs!");
+                }}
+                title="İngilizce sesi tekrar dinle"
+                className="px-3 py-1.5 bg-white border border-stone-200 hover:border-stone-400 rounded-xl text-xs font-medium text-stone-700 flex items-center gap-1.5 shadow-2xs transition-colors"
+              >
+                <Volume1 className="w-4 h-4 text-rose-600" />
+                <span className="hidden sm:inline">Tekrar Dinle</span>
+              </button>
+            )}
           </div>
         </div>
 
