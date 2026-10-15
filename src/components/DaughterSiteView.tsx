@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Heart, Calendar, MapPin, Sparkles, BookOpen, MessageSquare, 
   Send, X, Palette, Star, Camera, Music, Sun, Award, Clock, ArrowRight,
-  ShieldCheck, Lock, Unlock, Gamepad2
+  ShieldCheck, Lock, Unlock, Gamepad2, Eye, Users
 } from 'lucide-react';
 import { SiteConfig, Milestone, BlogPost, GalleryItem, GuestbookEntry } from '../types/site';
 import { KidsPlayground } from './KidsPlayground';
+import { supabaseService } from '../services/supabase';
 
 interface DaughterSiteViewProps {
   config: SiteConfig;
@@ -45,6 +46,18 @@ export const DaughterSiteView: React.FC<DaughterSiteViewProps> = ({
   const [isUnlocked, setIsUnlocked] = useState(!config.protectionEnabled);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+
+  // Visitor count state
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    supabaseService.recordVisit()
+      .then(count => setVisitorCount(count))
+      .catch(() => {
+        const local = typeof window !== 'undefined' ? localStorage.getItem('nisan_visitor_count') : null;
+        setVisitorCount(local ? parseInt(local, 10) : 1);
+      });
+  }, []);
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,34 +209,14 @@ export const DaughterSiteView: React.FC<DaughterSiteViewProps> = ({
                   {/* Bottom reassurance card */}
                   <div className="bg-white/90 rounded-lg p-3 text-xs text-stone-600 border border-stone-200/50 flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      Kalıcı Domain & SSL Güvenliği
+                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                      Sevgiyle Saklanan Aile Hatıraları
                     </span>
-                    <span className="text-[11px] font-mono text-stone-400">{config.customDomain}</span>
+                    <span className="text-[11px] font-mono text-stone-400">Ömürlük Arşiv</span>
                   </div>
 
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* KPI Proof Strip below split */}
-          <div className="mt-16 pt-8 border-t border-stone-200/60 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div className="space-y-1">
-              <span className="text-2xl font-bold font-display text-stone-900">0 TL</span>
-              <p className="text-xs text-stone-500">Ömür Boyu Ücretsiz Vercel Dağıtımı</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold font-display text-stone-900">100/100</span>
-              <p className="text-xs text-stone-500">Mobil Uyum & Hız Skoru</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold font-display text-stone-900">Özel CMS</span>
-              <p className="text-xs text-stone-500">Kolay Türkçe Admin Paneli</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-2xl font-bold font-display text-stone-900">Tam Mülkiyet</span>
-              <p className="text-xs text-stone-500">Kendi Alan Adınızda Bağımsız</p>
             </div>
           </div>
 
@@ -648,18 +641,32 @@ export const DaughterSiteView: React.FC<DaughterSiteViewProps> = ({
         </>
       )}
 
-      {/* Minimalist Footer */}
-      <footer className="py-12 bg-white border-t border-stone-200 text-stone-500 text-xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="font-semibold text-stone-800">{config.daughterName}</span> — Kişisel Büyüme & Hatırat Arşivi.
+      {/* Minimalist Footer with Visitor Counter */}
+      <footer className="py-10 bg-white border-t border-stone-200 text-stone-500 text-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-800">{config.daughterName}</span>
+            <span className="text-stone-400">— Kişisel Büyüme & Hatırat Arşivi</span>
           </div>
+
+          {/* Minimalist Ziyaretçi Sayacı */}
+          <div 
+            className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-stone-50 border border-stone-200/80 text-stone-600 text-xs shadow-2xs select-none"
+            title="Siteye yapılan toplam ziyaret sayısı"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <Eye className="w-3.5 h-3.5 text-stone-400" />
+            <span className="text-stone-400">Ziyaretçi:</span>
+            <span className="font-mono font-semibold text-stone-800">
+              {visitorCount !== null ? visitorCount.toLocaleString('tr-TR') : '...'}
+            </span>
+          </div>
+
           <div className="flex items-center gap-4 text-stone-400">
-            <span>Alan Adı: {config.customDomain}</span>
-            <span aria-hidden="true">·</span>
-            <span>Vercel & Global CDN Uyumlu</span>
-            <span aria-hidden="true">·</span>
-            <button onClick={onOpenAdmin} className="text-stone-700 hover:underline">
+            <button onClick={onOpenAdmin} className="text-stone-600 hover:text-stone-900 transition-colors">
               Yönetici Girişi
             </button>
           </div>

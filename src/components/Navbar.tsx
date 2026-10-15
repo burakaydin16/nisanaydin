@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-xs text-stone-500 font-normal">
                 {activeView === 'admin'
                   ? 'Yönetim Modu: İçerik, SEO ve site ayarları anında güncellenir'
-                  : 'Rehber Modu: Vercel, Dokploy, Domain DNS ve teknoloji karşılaştırması'}
+                  : 'Rehber Modu: Alan adı, DNS ve teknik kurulum adımları'}
               </span>
             )}
           </nav>
@@ -196,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeView === 'roadmap' ? 'bg-amber-100 text-amber-900 font-semibold' : 'text-stone-700'
               }`}
             >
-              Dağıtım & Mimari Rehberi (Vercel vs Dokploy)
+              Kurulum & Alan Adı (DNS) Rehberi
             </button>
             <button
               onClick={() => {

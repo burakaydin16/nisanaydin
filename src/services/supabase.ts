@@ -322,6 +322,84 @@ class SupabaseService {
       return null;
     }
   }
+
+  /**
+   * Fetch visitor count from Supabase table 'site_visits' or localStorage
+   */
+  async fetchVisitorCount(): Promise<number> {
+    const client = this.getClient();
+    if (client) {
+      try {
+        const { data, error } = await client
+          .from('site_visits')
+          .select('count')
+          .eq('id', 'total_visits')
+          .maybeSingle();
+        if (!error && data && typeof data.count === 'number') {
+          localStorage.setItem('nisan_visitor_count', String(data.count));
+          return data.count;
+        }
+      } catch {
+        // Fallback to localStorage
+      }
+    }
+    const local = localStorage.getItem('nisan_visitor_count');
+    return local ? parseInt(local, 10) : 1;
+  }
+
+  /**
+   * Record a new visitor (counted once per browsing session)
+   */
+  async recordVisit(): Promise<number> {
+    const hasVisitedThisSession = typeof window !== 'undefined' && sessionStorage.getItem('nisan_session_visited');
+    const localCount = typeof window !== 'undefined' 
+      ? parseInt(localStorage.getItem('nisan_visitor_count') || '1', 10) 
+      : 1;
+
+    const client = this.getClient();
+    if (!client) {
+      if (!hasVisitedThisSession && typeof window !== 'undefined') {
+        const newCount = localCount + 1;
+        localStorage.setItem('nisan_visitor_count', String(newCount));
+        sessionStorage.setItem('nisan_session_visited', 'true');
+        return newCount;
+      }
+      return localCount;
+    }
+
+    try {
+      const { data, error } = await client
+        .from('site_visits')
+        .select('count')
+        .eq('id', 'total_visits')
+        .maybeSingle();
+
+      let current = (!error && data && typeof data.count === 'number') ? data.count : localCount;
+
+      if (!hasVisitedThisSession) {
+        current = current + 1;
+        await client.from('site_visits').upsert([
+          { id: 'total_visits', count: current, updated_at: new Date().toISOString() }
+        ]);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('nisan_session_visited', 'true');
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('nisan_visitor_count', String(current));
+      }
+      return current;
+    } catch {
+      if (!hasVisitedThisSession && typeof window !== 'undefined') {
+        const newCount = localCount + 1;
+        localStorage.setItem('nisan_visitor_count', String(newCount));
+        sessionStorage.setItem('nisan_session_visited', 'true');
+        return newCount;
+      }
+      return localCount;
+    }
+  }
 }
 
 export const supabaseService = new SupabaseService();

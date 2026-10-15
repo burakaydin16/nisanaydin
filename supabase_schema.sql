@@ -148,3 +148,28 @@ DROP POLICY IF EXISTS "Public can submit guestbook entries" ON public.guestbook;
 CREATE POLICY "Public can submit guestbook entries" 
 ON public.guestbook FOR INSERT 
 TO anon, authenticated WITH CHECK (true);
+
+
+-- 7. ZİYARETÇİ SAYACI TABLOSU (Basit ve Hızlı Sayaç)
+CREATE TABLE IF NOT EXISTS public.site_visits (
+    id TEXT PRIMARY KEY DEFAULT 'total_visits',
+    count BIGINT DEFAULT 1,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.site_visits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view visit count" ON public.site_visits;
+CREATE POLICY "Public can view visit count" 
+ON public.site_visits FOR SELECT 
+TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Public can update visit count" ON public.site_visits;
+CREATE POLICY "Public can update visit count" 
+ON public.site_visits FOR ALL 
+TO anon, authenticated USING (true) WITH CHECK (true);
+
+INSERT INTO public.site_visits (id, count)
+VALUES ('total_visits', 1)
+ON CONFLICT (id) DO NOTHING;
+
