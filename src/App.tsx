@@ -15,18 +15,27 @@ import { AdminPanel } from './components/AdminPanel';
 import { DeploymentRoadmap } from './components/DeploymentRoadmap';
 import { CodeExportModal } from './components/CodeExportModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { supabaseService } from './services/supabase';
 
 export default function App() {
-  // Load state with localStorage fallback (updates to Nisan Aydın if old name present)
+  // Clear any old mock demo data stored from previous sessions to respect user's privacy request
+  useEffect(() => {
+    const versionKey = 'nisan_privacy_clean_v2';
+    if (!localStorage.getItem(versionKey)) {
+      localStorage.removeItem('daughter_site_milestones');
+      localStorage.removeItem('daughter_site_blog');
+      localStorage.removeItem('daughter_site_gallery');
+      localStorage.removeItem('daughter_site_guestbook');
+      localStorage.setItem(versionKey, 'true');
+    }
+  }, []);
+
   const [config, setConfig] = useState<SiteConfig>(() => {
     const saved = localStorage.getItem('daughter_site_config');
     if (!saved) return initialSiteConfig;
     try {
       const parsed = JSON.parse(saved);
-      if (parsed.daughterName === 'Lina Aydın') {
-        return initialSiteConfig;
-      }
-      return parsed;
+      return { ...initialSiteConfig, ...parsed, daughterName: 'Nisan Aydın' };
     } catch {
       return initialSiteConfig;
     }
@@ -34,30 +43,12 @@ export default function App() {
 
   const [milestones, setMilestones] = useState<Milestone[]>(() => {
     const saved = localStorage.getItem('daughter_site_milestones');
-    if (!saved) return initialMilestones;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed[0]?.title?.includes('Lina')) {
-        return initialMilestones;
-      }
-      return parsed;
-    } catch {
-      return initialMilestones;
-    }
+    return saved ? JSON.parse(saved) : initialMilestones;
   });
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
     const saved = localStorage.getItem('daughter_site_blog');
-    if (!saved) return initialBlogPosts;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed[0]?.content?.includes('Lina')) {
-        return initialBlogPosts;
-      }
-      return parsed;
-    } catch {
-      return initialBlogPosts;
-    }
+    return saved ? JSON.parse(saved) : initialBlogPosts;
   });
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
@@ -70,6 +61,49 @@ export default function App() {
     return saved ? JSON.parse(saved) : initialGuestbook;
   });
 
+  // Fetch live tables from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSupabaseData() {
+      try {
+        const [remoteConfig, remoteMilestones, remotePosts, remoteGallery, remoteGuestbook] = await Promise.all([
+          supabaseService.fetchSiteConfig(),
+          supabaseService.fetchMilestones(),
+          supabaseService.fetchBlogPosts(),
+          supabaseService.fetchGallery(),
+          supabaseService.fetchGuestbook(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (remoteConfig) {
+          setConfig(prev => ({ ...prev, ...remoteConfig }));
+        }
+        if (remoteMilestones !== null) {
+          setMilestones(remoteMilestones);
+        }
+        if (remotePosts !== null) {
+          setBlogPosts(remotePosts);
+        }
+        if (remoteGallery !== null) {
+          setGallery(remoteGallery);
+        }
+        if (remoteGuestbook !== null) {
+          setGuestbook(remoteGuestbook);
+        }
+      } catch (err) {
+        console.warn('Supabase initial fetch info:', err);
+      }
+    }
+
+    loadSupabaseData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Admin authentication state
   const [adminUser, setAdminUser] = useState<{ username: string; fullName: string; role: string } | null>(() => {
     const saved = sessionStorage.getItem('nisan_admin_user');
@@ -81,7 +115,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<'site' | 'admin' | 'roadmap'>('site');
   const [isExportOpen, setIsExportOpen] = useState(false);
 
-  // Sync to localStorage
+  // Sync state changes to localStorage
   useEffect(() => {
     localStorage.setItem('daughter_site_config', JSON.stringify(config));
   }, [config]);
@@ -102,14 +136,25 @@ export default function App() {
     localStorage.setItem('daughter_site_guestbook', JSON.stringify(guestbook));
   }, [guestbook]);
 
-  const handleAddGuestbookEntry = (entryData: Omit<GuestbookEntry, 'id' | 'date' | 'approved'>) => {
+  const handleAddGuestbookEntry = async (entryData: Omit<GuestbookEntry, 'id' | 'date' | 'approved'>) => {
+    const formattedDate = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     const newEntry: GuestbookEntry = {
       id: `gb-${Date.now()}`,
       ...entryData,
-      date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+      date: formattedDate,
       approved: false, // requires admin approval
     };
-    setGuestbook([newEntry, ...guestbook]);
+
+    // Update local state immediately
+    setGuestbook(prev => [newEntry, ...prev]);
+
+    // Send to Supabase guestbook table
+    await supabaseService.insertGuestbook({
+      name: entryData.name,
+      relationship: entryData.relationship,
+      message: entryData.message,
+      date: formattedDate,
+    });
   };
 
   const handleRequestView = (view: 'site' | 'admin' | 'roadmap') => {
@@ -189,7 +234,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Supabase Admin Login Modal */}
+      {/* Admin Login Modal (clean, zero credentials on screen) */}
       <AdminLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}

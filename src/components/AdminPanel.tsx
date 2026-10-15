@@ -5,7 +5,7 @@ import {
   ExternalLink, Copy, CheckCircle2, Calendar, Database, LogOut, KeyRound
 } from 'lucide-react';
 import { SiteConfig, Milestone, BlogPost, GalleryItem, GuestbookEntry } from '../types/site';
-import { supabaseService, SUPABASE_ADMIN_SQL } from '../services/supabase';
+import { supabaseService } from '../services/supabase';
 
 interface AdminPanelProps {
   config: SiteConfig;
@@ -38,7 +38,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   adminUser,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'milestones' | 'blog' | 'gallery' | 'guestbook' | 'seo' | 'supabase'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'milestones' | 'blog' | 'gallery' | 'guestbook' | 'seo'>('settings');
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   // Form states for general settings
@@ -267,7 +267,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             { id: 'gallery', label: `Fotoğraf & Sanat (${gallery.length})`, icon: ImageIcon },
             { id: 'guestbook', label: `Anı Defteri (${guestbook.length})`, icon: MessageSquare },
             { id: 'seo', label: 'SEO & Meta Tag', icon: Globe },
-            { id: 'supabase', label: 'Supabase & SQL', icon: Database },
           ].map(tab => {
             const Icon = tab.icon;
             return (
@@ -977,104 +976,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-          </div>
-        )}
-
-        {/* Tab 7: Supabase Database & Auth Settings */}
-        {activeTab === 'supabase' && (
-          <div className="space-y-8">
-            <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
-                <div>
-                  <h3 className="font-display font-bold text-lg text-stone-900 flex items-center gap-2">
-                    <Database className="w-5 h-5 text-emerald-600" />
-                    <span>Supabase Veritabanı & Admin Giriş Ayarları</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Admin paneli kullanıcı adı ve şifresi bu Supabase projenizdeki <code>admin_users</code> tablosunda tutulur.
-                  </p>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  supabaseService.isConfigured()
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-amber-50 text-amber-800 border border-amber-200'
-                }`}>
-                  {supabaseService.isConfigured() ? '✓ Supabase Bağlı' : 'Önizleme / Demo Modu'}
-                </div>
-              </div>
-
-              {/* API Credentials */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 mb-1">
-                    Supabase Project URL
-                  </label>
-                  <input
-                    type="text"
-                    value={supabaseService.url}
-                    onChange={(e) => supabaseService.setCredentials(e.target.value, supabaseService.anonKey)}
-                    placeholder="https://xyzproject.supabase.co"
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-stone-900 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 mb-1">
-                    Supabase Anon Key
-                  </label>
-                  <input
-                    type="password"
-                    value={supabaseService.anonKey}
-                    onChange={(e) => supabaseService.setCredentials(supabaseService.url, e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-stone-900 focus:bg-white"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-600">
-                💡 <strong>Not:</strong> Bu bilgileri ayrıca Vercel'de projenizin <strong>Settings &rarr; Environment Variables</strong> bölümüne <code>VITE_SUPABASE_URL</code> ve <code>VITE_SUPABASE_ANON_KEY</code> olarak ekleyebilirsiniz.
-              </div>
-            </div>
-
-            {/* Ready to Run SQL Schema for Supabase */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="font-display font-bold text-base text-stone-900">
-                    Supabase SQL Tablo Kodu (admin_users)
-                  </h4>
-                  <p className="text-xs text-stone-500">
-                    Supabase Dashboard &rarr; <strong>SQL Editor</strong> bölümüne aşağıdaki kodu yapıştırıp <strong>"Run"</strong> butonuna basmanız yeterlidir:
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleCopy(SUPABASE_ADMIN_SQL, 'supabase_sql')}
-                  className="px-3 py-1.5 bg-stone-900 text-white rounded-lg text-xs font-medium hover:bg-stone-800 transition-colors flex items-center gap-1.5 shrink-0"
-                >
-                  {copiedItem === 'supabase_sql' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedItem === 'supabase_sql' ? 'Kopyalandı!' : 'SQL Tablosunu Kopyala'}</span>
-                </button>
-              </div>
-
-              <pre className="p-4 bg-stone-900 text-stone-100 rounded-xl text-xs font-mono overflow-x-auto max-h-80 leading-relaxed">
-                {SUPABASE_ADMIN_SQL}
-              </pre>
-
-              <div className="mt-4 pt-4 border-t border-stone-100 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-stone-600">
-                <div className="p-3 bg-stone-50 rounded-lg">
-                  <strong className="block text-stone-900 mb-0.5">Varsayılan Kullanıcı:</strong>
-                  <code>admin</code>
-                </div>
-                <div className="p-3 bg-stone-50 rounded-lg">
-                  <strong className="block text-stone-900 mb-0.5">Varsayılan Şifre:</strong>
-                  <code>Nisan2020!</code>
-                </div>
-                <div className="p-3 bg-stone-50 rounded-lg">
-                  <strong className="block text-stone-900 mb-0.5">Güvenlik (RLS):</strong>
-                  <span>Aktif & Otomatik Yetkilendirilmiş</span>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
