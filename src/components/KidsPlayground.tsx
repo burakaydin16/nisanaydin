@@ -5,6 +5,7 @@ import {
   Check, ArrowRight, Music, HelpCircle, Volume1, Trophy, Zap
 } from 'lucide-react';
 import { soundFx } from '../utils/audioEffects';
+import { AnimalSafariGame } from './AnimalSafariGame';
 
 interface KidsPlaygroundProps {
   daughterName: string;
@@ -439,92 +440,9 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
   };
 
   // ----------------------------------------------------
-  // GAME 5: ANIMAL HABITATS & MEMORY (8 Cards / 4 Pairs)
+  // GAME 5: ANIMAL SAFARI (28 Animals, 6 Habitats, Multiple Submodes & Varieties)
+  // Handled by the modular <AnimalSafariGame /> component
   // ----------------------------------------------------
-  interface AnimalCard {
-    cardId: number;
-    animalId: string;
-    name: string;
-    habitat: string;
-    emoji: string;
-    soundQuote: string;
-    flipped: boolean;
-    matched: boolean;
-  }
-
-  const masterAnimals = [
-    { id: 'lion', name: 'Lion', habitat: 'Savannah', emoji: '🦁', soundQuote: 'The mighty lion roars in the golden savannah!' },
-    { id: 'dolphin', name: 'Dolphin', habitat: 'Ocean', emoji: '🐬', soundQuote: 'The playful dolphin leaps in the blue ocean!' },
-    { id: 'owl', name: 'Owl', habitat: 'Forest', emoji: '🦉', soundQuote: 'The wise owl hoots in the quiet forest!' },
-    { id: 'panda', name: 'Panda', habitat: 'Bamboo Grove', emoji: '🐼', soundQuote: 'The cute panda munches bamboo!' },
-    { id: 'penguin', name: 'Penguin', habitat: 'Polar Ice', emoji: '🐧', soundQuote: 'The brave penguin waddles on polar ice!' },
-    { id: 'butterfly', name: 'Butterfly', habitat: 'Flower Garden', emoji: '🦋', soundQuote: 'The gentle butterfly flutters in the flower garden!' },
-  ];
-
-  const [cards, setCards] = useState<AnimalCard[]>([]);
-  const [flippedIds, setFlippedIds] = useState<number[]>([]);
-  const [pairsCompleted, setPairsCompleted] = useState(0);
-
-  const initAnimalMemory = () => {
-    // Pick 4 animals for 4.5yo (8 cards = 4 pairs)
-    const picked = masterAnimals.sort(() => 0.5 - Math.random()).slice(0, 4);
-    const deck: AnimalCard[] = [];
-    let count = 1;
-    picked.forEach(item => {
-      deck.push({ ...item, cardId: count++, animalId: item.id, flipped: false, matched: false });
-      deck.push({ ...item, cardId: count++, animalId: item.id, flipped: false, matched: false });
-    });
-    setCards(deck.sort(() => 0.5 - Math.random()));
-    setFlippedIds([]);
-    setPairsCompleted(0);
-  };
-
-  useEffect(() => {
-    if (activeGame === 'animals') {
-      initAnimalMemory();
-      speakPrompt("Match the animal pairs and discover their habitats!");
-    }
-  }, [activeGame]);
-
-  const handleFlipCard = (cardId: number) => {
-    if (flippedIds.length === 2) return;
-    const target = cards.find(c => c.cardId === cardId);
-    if (!target || target.flipped || target.matched) return;
-
-    soundFx.playPop();
-    const updated = cards.map(c => c.cardId === cardId ? { ...c, flipped: true } : c);
-    setCards(updated);
-
-    const newFlipped = [...flippedIds, cardId];
-    setFlippedIds(newFlipped);
-
-    if (newFlipped.length === 2) {
-      const first = cards.find(c => c.cardId === newFlipped[0]);
-      const second = cards.find(c => c.cardId === newFlipped[1]);
-
-      if (first && second && first.animalId === second.animalId) {
-        soundFx.playSuccess();
-        speakPrompt(`Great match! ${first.name}! It lives in the ${first.habitat}!`);
-        setTimeout(() => {
-          setCards(prev => prev.map(c => c.animalId === first.animalId ? { ...c, matched: true } : c));
-          setFlippedIds([]);
-          setPairsCompleted(p => {
-            const next = p + 1;
-            if (next === 4) {
-              speakPrompt(`Congratulations ${daughterName}! You found all four animal families!`);
-              setScore(s => s + 4);
-            }
-            return next;
-          });
-        }, 700);
-      } else {
-        setTimeout(() => {
-          setCards(prev => prev.map(c => newFlipped.includes(c.cardId) ? { ...c, flipped: false } : c));
-          setFlippedIds([]);
-        }, 1100);
-      }
-    }
-  };
 
   return (
     <div className="bg-[#FAF8F5] border-y border-stone-200 py-16">
@@ -596,7 +514,7 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
                   if (activeGame === 'patterns') speakPrompt("What comes next in the pattern?");
                   if (activeGame === 'counting') speakPrompt(`How many ${currentMath.itemWord} are there in total? Let's count!`);
                   if (activeGame === 'shapes') speakPrompt(`Can you find the ${currentShape.targetName}?`);
-                  if (activeGame === 'animals') speakPrompt("Match the animal pairs!");
+                  if (activeGame === 'animals') speakPrompt("Welcome to Animal Safari! Discover animals and their habitats!");
                 }}
                 title="İngilizce sesi tekrar dinle"
                 className="px-3 py-1.5 bg-white border border-stone-200 hover:border-stone-400 rounded-xl text-xs font-medium text-stone-700 flex items-center gap-1.5 shadow-2xs transition-colors"
@@ -615,7 +533,7 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
             { id: 'patterns', label: 'Logic Patterns', emoji: '🔷', desc: 'Sequence Puzzle' },
             { id: 'counting', label: 'Math & Count', emoji: '➕', desc: 'Numbers to 10' },
             { id: 'shapes', label: 'Shapes Lab', emoji: '💎', desc: 'Geometry Discovery' },
-            { id: 'animals', label: 'Animal Safari', emoji: '🦁', desc: 'Habitats & Memory' },
+            { id: 'animals', label: 'Animal Safari', emoji: '🦁', desc: 'Habitats, Bilmeceler & Atlas' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -874,68 +792,15 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
           </div>
         )}
 
-        {/* GAME 5: ANIMAL HABITATS & MEMORY (8 Cards) */}
+        {/* GAME 5: ANIMAL SAFARI DISCOVERY LAB (Rich Combinations, Habitats & Submodes) */}
         {activeGame === 'animals' && (
-          <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-10 shadow-sm text-center">
-            <div className="mb-6">
-              <span className="text-xs uppercase font-bold tracking-wider text-rose-600 block mb-1">
-                Nature Explorer & Memory Pairs
-              </span>
-              <h3 className="font-display font-bold text-2xl sm:text-3xl text-stone-900">
-                Match the Animal Pairs! 🦁
-              </h3>
-              <p className="text-xs text-stone-400 mt-1">
-                Pairs completed: <strong>{pairsCompleted} / 4</strong> · Discover their natural habitats!
-              </p>
-            </div>
-
-            {/* 8 Cards Grid (4x2 on mobile/tablet) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8">
-              {cards.map((card) => {
-                const isShowing = card.flipped || card.matched;
-                return (
-                  <button
-                    key={card.cardId}
-                    onClick={() => handleFlipCard(card.cardId)}
-                    disabled={card.matched}
-                    className={`h-36 rounded-2xl border-2 transition-all flex flex-col items-center justify-center p-2 relative active:scale-95 ${
-                      card.matched
-                        ? 'border-emerald-300 bg-emerald-50/70 opacity-90'
-                        : isShowing
-                        ? 'border-stone-500 bg-white shadow-md'
-                        : 'border-stone-200 bg-amber-50/40 hover:border-amber-300 shadow-sm'
-                    }`}
-                  >
-                    {isShowing ? (
-                      <>
-                        <span className="text-4xl block mb-1 animate-in zoom-in-50">
-                          {card.emoji}
-                        </span>
-                        <span className="text-xs font-bold text-stone-900 leading-tight">
-                          {card.name}
-                        </span>
-                        <span className="text-[10px] text-stone-500 font-medium">
-                          {card.habitat}
-                        </span>
-                      </>
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                        <HelpCircle className="w-5 h-5 text-amber-600" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={initAnimalMemory}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Shuffle New Animals</span>
-            </button>
-          </div>
+          <AnimalSafariGame
+            daughterName={daughterName}
+            soundEnabled={soundEnabled}
+            voiceEnabled={voiceEnabled}
+            speakPrompt={speakPrompt}
+            onScore={(points) => setScore((s) => s + points)}
+          />
         )}
 
       </div>
