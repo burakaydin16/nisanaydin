@@ -360,27 +360,32 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
             </div>
           </div>
 
-          {/* Game Stats & Progress */}
-          <div className="flex items-center justify-between text-xs text-stone-500 mb-2.5 px-1">
+          {/* Game Stats & Progress + Highly Prominent Yeniden Karıştır Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-stone-700">Tamamlanan:</span>
-              <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+              <span className="font-bold text-xs sm:text-sm text-stone-800">Eşleşen Çiftler:</span>
+              <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-900 font-extrabold text-xs sm:text-sm border-2 border-emerald-300 shadow-2xs">
                 {pairsCompleted} / {pairCount}
               </span>
               {pairsCompleted === pairCount && (
-                <span className="inline-flex items-center gap-1 text-emerald-600 font-bold animate-bounce">
-                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-extrabold text-xs sm:text-sm animate-bounce">
+                  <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 fill-amber-400" />
                   Harika Başarı!
                 </span>
               )}
             </div>
 
+            {/* Büyük ve Belirgin Yeniden Karıştır Butonu */}
             <button
-              onClick={() => initMemoryGame(habitatFilter, pairCount)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium text-xs transition-colors"
+              onClick={() => {
+                soundFx.playPop();
+                initMemoryGame(habitatFilter, pairCount);
+              }}
+              className="group inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg active:scale-95 border-2 border-amber-300 ring-4 ring-amber-100 cursor-pointer"
+              title="Kartları yeniden karıştır ve yeni oyun başlat"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Yeniden Karıştır</span>
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-white transition-transform group-hover:-rotate-90 duration-300 stroke-[2.5]" />
+              <span className="tracking-wide">Yeniden Karıştır 🔀</span>
             </button>
           </div>
 
@@ -570,11 +575,14 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
             </div>
           ) : (
             <button
-              onClick={initHabitatRound}
-              className="text-xs text-stone-500 hover:text-stone-800 font-semibold inline-flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                soundFx.playPop();
+                initHabitatRound();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
             >
-              <Shuffle className="w-3.5 h-3.5" />
-              <span>Başka Hayvan Getir</span>
+              <Shuffle className="w-4 h-4 text-amber-600" />
+              <span>Başka Hayvan Getir 🔀</span>
             </button>
           )}
         </div>
@@ -681,11 +689,14 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
             </div>
           ) : (
             <button
-              onClick={initRiddleRound}
-              className="text-xs text-stone-500 hover:text-stone-800 font-semibold inline-flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                soundFx.playPop();
+                initRiddleRound();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
             >
-              <Shuffle className="w-3.5 h-3.5" />
-              <span>Başka Bilmece Göster</span>
+              <Shuffle className="w-4 h-4 text-amber-600" />
+              <span>Başka Bilmece Göster 🔀</span>
             </button>
           )}
         </div>
