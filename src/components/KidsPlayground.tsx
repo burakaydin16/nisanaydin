@@ -14,10 +14,10 @@ interface KidsPlaygroundProps {
 type GameMode = 'phonics' | 'patterns' | 'counting' | 'shapes' | 'animals';
 
 export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) => {
-  const [activeGame, setActiveGame] = useState<GameMode>('phonics');
-  // Sound is strictly disabled by default. Only turns on if user clicks 'Sesi Aç'
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [activeGame, setActiveGame] = useState<GameMode>('animals');
+  // Sound is enabled by default in the game room as requested
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [score, setScore] = useState(0);
 
   // Sync sound settings
@@ -445,33 +445,25 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
   // ----------------------------------------------------
 
   return (
-    <div className="bg-[#FAF8F5] border-y border-stone-200 py-16">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full flex-1 flex flex-col justify-start">
+      <div className="w-full">
         
-        {/* Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between pb-8 mb-8 border-b border-stone-200/80 gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-rose-800 uppercase tracking-wider mb-1">
-              <span>{daughterName}'s English Learning & Discovery Lab</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-bold text-stone-900 bg-amber-100 px-2 py-0.5 rounded-md">Age 4.5+ Pre-K Ready</span>
-            </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-stone-900">
-              Interactive English Adventure 🚀
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1">
-              Phonics sounds, pattern logic, pre-math addition, advanced shapes, and animal habitats with friendly English voiceover.
-            </p>
+        {/* Compact Sub-header: Score & Audio Controls */}
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-stone-200/80 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-stone-900 bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200">
+              🦁 Nisan Aydın Eğitici Oyun Odası (4.5 Yaş)
+            </span>
           </div>
 
           {/* Audio & Score Controls */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs font-bold shadow-2xs">
-              <Trophy className="w-4 h-4 fill-amber-400 text-amber-500" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs font-bold shadow-2xs">
+              <Trophy className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
               <span>{score} Yıldız</span>
             </div>
 
-            {/* Master Sound Toggle Button */}
+            {/* Sound Toggle Button */}
             <button
               onClick={() => {
                 const next = !soundEnabled;
@@ -483,11 +475,12 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
                   soundFx.muteAll();
                 } else {
                   soundFx.playPop();
+                  if (activeGame === 'animals') speakPrompt("Welcome to Kart Eşleştirme!");
                   if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
                 }
               }}
-              title={soundEnabled ? 'Oyun sesini kapat' : 'Oyun sesini ve İngilizce seslendirmeyi aç'}
-              className={`px-3.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all shadow-2xs ${
+              title={soundEnabled ? 'Oyun sesini kapat' : 'Oyun sesini ve seslendirmeyi aç'}
+              className={`px-3 py-1 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs ${
                 soundEnabled 
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100' 
                   : 'bg-stone-900 border-stone-900 text-white hover:bg-stone-800'
@@ -495,65 +488,85 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
             >
               {soundEnabled ? (
                 <>
-                  <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse" />
-                  <span>Ses Açık (Kapat)</span>
+                  <Volume2 className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                  <span>Ses Açık</span>
                 </>
               ) : (
                 <>
-                  <VolumeX className="w-4 h-4 text-stone-300" />
-                  <span>Oyun Sesini Aç 🔊</span>
+                  <VolumeX className="w-3.5 h-3.5 text-stone-300" />
+                  <span>Sesi Aç 🔊</span>
                 </>
               )}
             </button>
 
-            {/* Repeat Audio Voiceover Button (only active if sound is on) */}
+            {/* Repeat Audio Voiceover Button */}
             {soundEnabled && (
               <button
                 onClick={() => {
+                  if (activeGame === 'animals') speakPrompt("Match the animal pairs in Kart Eşleştirme!");
                   if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
                   if (activeGame === 'patterns') speakPrompt("What comes next in the pattern?");
                   if (activeGame === 'counting') speakPrompt(`How many ${currentMath.itemWord} are there in total? Let's count!`);
                   if (activeGame === 'shapes') speakPrompt(`Can you find the ${currentShape.targetName}?`);
-                  if (activeGame === 'animals') speakPrompt("Welcome to Animal Safari! Discover animals and their habitats!");
                 }}
                 title="İngilizce sesi tekrar dinle"
-                className="px-3 py-1.5 bg-white border border-stone-200 hover:border-stone-400 rounded-xl text-xs font-medium text-stone-700 flex items-center gap-1.5 shadow-2xs transition-colors"
+                className="px-2.5 py-1 bg-white border border-stone-200 hover:border-stone-400 rounded-xl text-xs font-medium text-stone-700 flex items-center gap-1 shadow-2xs transition-colors"
               >
-                <Volume1 className="w-4 h-4 text-rose-600" />
+                <Volume1 className="w-3.5 h-3.5 text-rose-600" />
                 <span className="hidden sm:inline">Tekrar Dinle</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Big Tactile 4.5-Year-Old Game Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-8">
+        {/* Big Tactile 4.5-Year-Old Game Tabs (KART EŞLEŞTİRME IS FIRST & PROMINENT) */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5 mb-4">
           {[
-            { id: 'phonics', label: 'ABC Phonics', emoji: '🔤', desc: 'Letter Sounds' },
-            { id: 'patterns', label: 'Logic Patterns', emoji: '🔷', desc: 'Sequence Puzzle' },
-            { id: 'counting', label: 'Math & Count', emoji: '➕', desc: 'Numbers to 10' },
-            { id: 'shapes', label: 'Shapes Lab', emoji: '💎', desc: 'Geometry Discovery' },
-            { id: 'animals', label: 'Animal Safari', emoji: '🦁', desc: 'Habitats, Bilmeceler & Atlas' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveGame(tab.id as any);
-                soundFx.playPop();
-              }}
-              className={`p-3 rounded-2xl border text-center transition-all ${
-                activeGame === tab.id
-                  ? 'bg-stone-900 border-stone-900 text-white shadow-md scale-[1.02]'
-                  : 'bg-white border-stone-200/90 hover:border-stone-300 text-stone-700 hover:bg-stone-50'
-              }`}
-            >
-              <span className="text-2xl block mb-1">{tab.emoji}</span>
-              <span className="font-bold text-xs block leading-tight">{tab.label}</span>
-              <span className={`text-[10px] block opacity-70 ${activeGame === tab.id ? 'text-stone-300' : 'text-stone-400'}`}>
-                {tab.desc}
-              </span>
-            </button>
-          ))}
+            { 
+              id: 'animals', 
+              label: 'Kart Eşleştirme', 
+              emoji: '🦁', 
+              desc: 'Hafıza & Doğa', 
+              badge: '⭐ 1. Oyun / Ana Oyun',
+              isPrimary: true 
+            },
+            { id: 'phonics', label: 'ABC Phonics', emoji: '🔤', desc: 'Harf Sesleri' },
+            { id: 'patterns', label: 'Logic Patterns', emoji: '🔷', desc: 'Dizi Bulmacası' },
+            { id: 'counting', label: 'Math & Count', emoji: '➕', desc: 'Sayılar & Toplama' },
+            { id: 'shapes', label: 'Shapes Lab', emoji: '💎', desc: 'Geometri & Renk' },
+          ].map((tab) => {
+            const isActive = activeGame === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveGame(tab.id as any);
+                  soundFx.playPop();
+                  if (tab.id === 'animals') speakPrompt("Welcome to Kart Eşleştirme! Let's match the animal pairs!");
+                }}
+                className={`p-2 sm:p-2.5 rounded-2xl border text-center transition-all relative ${
+                  isActive
+                    ? tab.isPrimary
+                      ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 border-amber-500 text-white shadow-md scale-[1.03] ring-2 ring-amber-300'
+                      : 'bg-stone-900 border-stone-900 text-white shadow-md scale-[1.02]'
+                    : tab.isPrimary
+                      ? 'bg-amber-50 border-amber-300 text-amber-950 hover:bg-amber-100 hover:border-amber-400 font-semibold ring-1 ring-amber-200/80 shadow-xs'
+                      : 'bg-white border-stone-200/90 hover:border-stone-300 text-stone-700 hover:bg-stone-50'
+                }`}
+              >
+                {tab.badge && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-full bg-amber-500 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow-xs whitespace-nowrap">
+                    {tab.badge}
+                  </span>
+                )}
+                <span className="text-xl sm:text-2xl block mb-0.5">{tab.emoji}</span>
+                <span className="font-bold text-xs block leading-tight">{tab.label}</span>
+                <span className={`text-[10px] block opacity-75 ${isActive ? 'text-white/90' : 'text-stone-500'}`}>
+                  {tab.desc}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* GAME 1: PHONICS & LETTER SOUNDS */}

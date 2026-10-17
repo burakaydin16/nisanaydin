@@ -55,7 +55,45 @@ class SupabaseService {
     }
 
     try {
-      // 1. Query admin_users table in Supabase
+      // 1. Try Supabase Auth signInWithPassword if user entered an email or email-like identifier
+      if (trimmedUser.includes('@')) {
+        const authRes = await client.auth.signInWithPassword({
+          email: trimmedUser,
+          password: passwordPlain,
+        });
+        if (authRes.data.user) {
+          return {
+            success: true,
+            user: {
+              username: authRes.data.user.email || trimmedUser,
+              fullName: authRes.data.user.user_metadata?.full_name || 'Burak Aydın',
+              role: 'admin'
+            }
+          };
+        }
+      }
+
+      // 2. Try secure RPC function (verify_admin_login) if installed in Supabase
+      try {
+        const { data: rpcData, error: rpcErr } = await client.rpc('verify_admin_login', {
+          p_user: trimmedUser,
+          p_pass: passwordPlain,
+        });
+        if (!rpcErr && rpcData && rpcData.success) {
+          return {
+            success: true,
+            user: {
+              username: rpcData.username || trimmedUser,
+              fullName: rpcData.fullName || 'Burak Aydın',
+              role: rpcData.role || 'admin',
+            },
+          };
+        }
+      } catch {
+        // Fallback to direct query if RPC function does not exist
+      }
+
+      // 3. Query admin_users table in Supabase
       const { data, error } = await client
         .from('admin_users')
         .select('id, username, password, full_name, role, is_active')
@@ -65,69 +103,17 @@ class SupabaseService {
 
       if (error) {
         console.warn('Supabase admin_users query notice:', error.message);
-        
-        // Also check exact username match if or query failed
-        const fallback = await client
-          .from('admin_users')
-          .select('id, username, password, full_name, role, is_active')
-          .eq('username', trimmedUser)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (fallback.data && fallback.data.password === passwordPlain) {
-          return {
-            success: true,
-            user: {
-              username: fallback.data.username,
-              fullName: fallback.data.full_name || 'Burak Aydın',
-              role: fallback.data.role || 'admin'
-            }
-          };
-        }
-
-        // Try Supabase Auth signInWithPassword if credentials are in auth.users
-        if (trimmedUser.includes('@')) {
-          const authRes = await client.auth.signInWithPassword({
-            email: trimmedUser,
-            password: passwordPlain,
-          });
-          if (authRes.data.user) {
-            return {
-              success: true,
-              user: {
-                username: authRes.data.user.email || trimmedUser,
-                fullName: authRes.data.user.user_metadata?.full_name || 'Burak Aydın',
-                role: 'admin'
-              }
-            };
-          }
-        }
-
         return {
           success: false,
-          error: 'Kullanıcı adı veya şifre hatalı. Lütfen Supabase tablosundaki bilgilerinizi kontrol ediniz.'
+          error: 'Giriş yapılamadı. Kullanıcı adı veya şifrenizi kontrol ediniz.'
         };
       }
 
       if (!data) {
-        // Fallback for initial father account if table is not yet seeded
-        if (
-          (trimmedUser.toLowerCase() === 'admin' || trimmedUser.toLowerCase() === 'burak') &&
-          (passwordPlain === 'Nisan2020!' || passwordPlain === 'Nisan2026!')
-        ) {
-          return {
-            success: true,
-            user: {
-              username: trimmedUser,
-              fullName: 'Burak Aydın (Baba)',
-              role: 'super_admin'
-            }
-          };
-        }
         return { success: false, error: 'Kullanıcı adı bulunamadı veya hesap aktif değil.' };
       }
 
-      // Check password match
+      // Check password match against Supabase record
       if (data.password === passwordPlain) {
         return {
           success: true,
@@ -141,20 +127,6 @@ class SupabaseService {
         return { success: false, error: 'Hatalı şifre. Lütfen tekrar deneyiniz.' };
       }
     } catch (err: any) {
-      // Local fallback for initial access
-      if (
-        (trimmedUser.toLowerCase() === 'admin' || trimmedUser.toLowerCase() === 'burak') &&
-        (passwordPlain === 'Nisan2020!' || passwordPlain === 'Nisan2026!')
-      ) {
-        return {
-          success: true,
-          user: {
-            username: trimmedUser,
-            fullName: 'Burak Aydın (Baba)',
-            role: 'super_admin'
-          }
-        };
-      }
       return { success: false, error: `Giriş yapılamadı: ${err.message || 'Bilinmeyen hata'}` };
     }
   }

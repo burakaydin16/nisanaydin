@@ -228,37 +228,34 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 p-4 sm:p-8 shadow-sm">
+    <div className="bg-white rounded-3xl border border-stone-200 p-3 sm:p-5 shadow-sm">
       
       {/* Safari Title & Sub-mode Navigation */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-6 mb-6 border-b border-stone-200/80 gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-3 mb-3 border-b border-stone-200/80 gap-3">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">
-            <Compass className="w-4 h-4 text-amber-600" />
-            <span>Animal Safari Discovery Lab • 28 Hayvan & 6 Habitat</span>
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-700 uppercase tracking-wider mb-0.5">
+            <Compass className="w-3.5 h-3.5 text-amber-600" />
+            <span>Nisan'ın 1. Oyunu • 28 Hayvan & 6 Doğal Habitat</span>
           </div>
-          <h3 className="font-display font-bold text-2xl sm:text-3xl text-stone-900 flex items-center gap-2">
-            <span>🦁 Animal Safari & Doğa Keşfi</span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-              Yeni Kombinasyonlar
+          <h3 className="font-display font-bold text-xl sm:text-2xl text-stone-900 flex items-center gap-2">
+            <span>🦁 Kart Eşleştirme & Doğa Keşfi</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
+              ⭐ Ana Oyun
             </span>
           </h3>
-          <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl">
-            Farklı zorluk dereceleri, yaşam alanı filtreleri, bilmeceler ve interaktif sesli hayvan atlası ile zenginleştirilmiş öğrenme alanı.
-          </p>
         </div>
 
         {/* Sub-mode Switcher Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-1 bg-stone-100 p-1 rounded-2xl border border-stone-200 text-xs font-semibold">
           <button
             onClick={() => setSubMode('memory')}
             className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
               subMode === 'memory'
-                ? 'bg-white text-stone-900 shadow-xs border border-stone-200 font-bold'
+                ? 'bg-amber-600 text-white shadow-xs font-bold'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <span>🧩 Hafıza Kartları</span>
+            <span>🃏 Kart Eşleştirme</span>
           </button>
           <button
             onClick={() => setSubMode('habitat')}
@@ -299,13 +296,13 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
       {subMode === 'memory' && (
         <div>
           {/* Combinations Toolbar */}
-          <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3 sm:p-4 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-2 sm:p-2.5 mb-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2">
             
             {/* Habitat Combination Filter */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <div className="flex flex-wrap items-center gap-1 text-xs">
               <span className="font-bold text-amber-950 flex items-center gap-1 mr-1">
                 <Globe className="w-3.5 h-3.5 text-amber-600" />
-                <span>Habitat / Bölge:</span>
+                <span>Habitat:</span>
               </span>
               {(
                 [
@@ -324,7 +321,7 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
                     setHabitatFilter(item.id);
                     initMemoryGame(item.id, pairCount);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-all text-[11px] ${
+                  className={`px-2 py-0.5 rounded-lg font-medium transition-all text-[11px] ${
                     habitatFilter === item.id
                       ? 'bg-amber-600 text-white font-bold shadow-xs'
                       : 'bg-white/80 text-stone-700 hover:bg-white border border-amber-200/50'
@@ -336,8 +333,8 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
             </div>
 
             {/* Pair Count / Difficulty Combination */}
-            <div className="flex items-center gap-2 self-start md:self-auto border-t md:border-t-0 pt-2 md:pt-0 border-amber-200/50">
-              <span className="text-xs font-bold text-amber-950">Kart Çeşidi:</span>
+            <div className="flex items-center gap-1.5 self-start md:self-auto border-t md:border-t-0 pt-1 md:pt-0 border-amber-200/50">
+              <span className="text-xs font-bold text-amber-950">Kart:</span>
               {(
                 [
                   { count: 4, label: '4 Çift (8 Kart)' },
@@ -351,7 +348,7 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
                     setPairCount(item.count);
                     initMemoryGame(habitatFilter, item.count);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
                     pairCount === item.count
                       ? 'bg-stone-900 text-white shadow-xs'
                       : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50'
@@ -364,15 +361,15 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
           </div>
 
           {/* Game Stats & Progress */}
-          <div className="flex items-center justify-between text-xs text-stone-500 mb-4 px-1">
+          <div className="flex items-center justify-between text-xs text-stone-500 mb-2.5 px-1">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-stone-700">Tamamlanan Çiftler:</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+              <span className="font-semibold text-stone-700">Tamamlanan:</span>
+              <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
                 {pairsCompleted} / {pairCount}
               </span>
               {pairsCompleted === pairCount && (
                 <span className="inline-flex items-center gap-1 text-emerald-600 font-bold animate-bounce">
-                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
                   Harika Başarı!
                 </span>
               )}
@@ -380,15 +377,15 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
 
             <button
               onClick={() => initMemoryGame(habitatFilter, pairCount)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium text-xs transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium text-xs transition-colors"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Kartları Yeniden Karıştır</span>
+              <RotateCcw className="w-3 h-3" />
+              <span>Yeniden Karıştır</span>
             </button>
           </div>
 
-          {/* Dynamic Grid: 4 columns on mobile, adapts to 4-8 pairs */}
-          <div className={`grid gap-3 sm:gap-4 max-w-3xl mx-auto mb-6 ${
+          {/* Dynamic Grid: fits within viewport without scrolling */}
+          <div className={`grid gap-2 sm:gap-2.5 max-w-3xl mx-auto mb-3 ${
             pairCount === 4 
               ? 'grid-cols-2 sm:grid-cols-4' 
               : pairCount === 6 
@@ -402,7 +399,7 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
                   key={card.cardId}
                   onClick={() => handleFlipCard(card.cardId)}
                   disabled={card.matched}
-                  className={`h-32 sm:h-36 rounded-2xl border-2 transition-all flex flex-col items-center justify-center p-2 relative active:scale-95 ${
+                  className={`h-24 sm:h-28 md:h-30 rounded-2xl border-2 transition-all flex flex-col items-center justify-center p-1.5 relative active:scale-95 ${
                     card.matched
                       ? 'border-emerald-300 bg-emerald-50/80 shadow-xs'
                       : isShowing
@@ -437,21 +434,21 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
 
           {/* Last Matched Animal Card Spotlight */}
           {lastMatchedAnimal && (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-              <div className="flex items-center gap-3">
-                <span className="text-4xl p-2 bg-white rounded-2xl border border-emerald-200 shadow-xs">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 flex items-center justify-between gap-2.5 text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl p-1 bg-white rounded-xl border border-emerald-200 shadow-2xs">
                   {lastMatchedAnimal.emoji}
                 </span>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-emerald-950 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-emerald-950 text-xs">
                       {lastMatchedAnimal.name} ({lastMatchedAnimal.turkishName})
                     </span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full font-semibold">
                       {lastMatchedAnimal.habitatTurkish}
                     </span>
                   </div>
-                  <p className="text-xs text-emerald-900/80 mt-0.5">
+                  <p className="text-[11px] text-emerald-900/80 leading-tight">
                     "{lastMatchedAnimal.funFactTr}"
                   </p>
                 </div>
@@ -460,10 +457,10 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
               {soundEnabled && voiceEnabled && (
                 <button
                   onClick={() => speakPrompt(`${lastMatchedAnimal.name}. ${lastMatchedAnimal.soundQuote}`)}
-                  className="px-3 py-1.5 rounded-xl bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-1.5 transition-colors self-end sm:self-auto shrink-0"
+                  className="px-2.5 py-1 rounded-lg bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100 text-[11px] font-semibold flex items-center gap-1 transition-colors shrink-0"
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Sesi Dinle</span>
+                  <Volume2 className="w-3 h-3 text-emerald-600" />
+                  <span>Dinle</span>
                 </button>
               )}
             </div>
@@ -832,7 +829,7 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
       )}
 
       {/* Safari Explorer Footer Stats */}
-      <div className="mt-8 pt-4 border-t border-stone-200/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
+      <div className="mt-3 pt-2 border-t border-stone-200/70 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500">
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-amber-600" />
           <span>

@@ -84,6 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action Zone: Admin Access */}
           <div className="flex items-center gap-2 shrink-0">
+
             <button
               onClick={() => handleLinkClick('/admin')}
               className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 shadow-2xs ${
@@ -93,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{adminUser ? 'Yönetim Paneli' : 'Yönetici Girişi'}</span>
+              <span>{adminUser ? 'Yönetim Paneli' : 'Yönetici'}</span>
             </button>
 
             {/* Mobile hamburger button */}
@@ -137,7 +138,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             );
           })}
 
-          <div className="pt-2 border-t border-stone-100 mt-2">
+          <div className="pt-2 border-t border-stone-100 mt-2 space-y-1">
+
             <button
               onClick={() => handleLinkClick('/admin')}
               className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${

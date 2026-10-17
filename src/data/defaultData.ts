@@ -16,7 +16,7 @@ export const initialSiteConfig: SiteConfig = {
     ogImage: ""
   },
   protectionEnabled: false,
-  pinCode: "2304",
+  pinCode: "",
   kidsPlaygroundEnabled: true
 };
 

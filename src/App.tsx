@@ -184,13 +184,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col font-sans selection:bg-rose-100 selection:text-rose-900">
       
-      {/* Multi-Page Navigation Header with clean / paths */}
-      <Navbar
-        config={config}
-        currentRoute={currentRoute}
-        onNavigate={navigate}
-        adminUser={adminUser}
-      />
+      {/* Multi-Page Navigation Header with clean / paths (Hidden on /oyun for full-screen immersive game) */}
+      {currentRoute !== '/oyun' && (
+        <Navbar
+          config={config}
+          currentRoute={currentRoute}
+          onNavigate={navigate}
+          adminUser={adminUser}
+        />
+      )}
 
       {/* Path-based Multi-Page Views */}
       <main className="flex-1 flex flex-col">
