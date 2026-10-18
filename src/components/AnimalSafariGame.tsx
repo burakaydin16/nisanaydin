@@ -375,17 +375,17 @@ export const AnimalSafariGame: React.FC<AnimalSafariGameProps> = ({
               )}
             </div>
 
-            {/* Büyük ve Belirgin Yeniden Karıştır Butonu */}
+            {/* Süper Büyük ve Belirgin Yeniden Karıştır Butonu */}
             <button
               onClick={() => {
                 soundFx.playPop();
                 initMemoryGame(habitatFilter, pairCount);
               }}
-              className="group inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg active:scale-95 border-2 border-amber-300 ring-4 ring-amber-100 cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2.5 px-6 py-2.5 sm:px-7 sm:py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-sm sm:text-base transition-all shadow-md hover:shadow-xl active:scale-95 border-2 border-amber-200 ring-4 ring-amber-300/40 cursor-pointer"
               title="Kartları yeniden karıştır ve yeni oyun başlat"
             >
-              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-white transition-transform group-hover:-rotate-90 duration-300 stroke-[2.5]" />
-              <span className="tracking-wide">Yeniden Karıştır 🔀</span>
+              <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 text-white transition-transform group-hover:-rotate-180 duration-500 stroke-[3]" />
+              <span className="tracking-wide drop-shadow-xs">Yeniden Karıştır 🔀</span>
             </button>
           </div>
 

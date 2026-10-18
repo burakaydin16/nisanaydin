@@ -6,12 +6,13 @@ import {
 } from 'lucide-react';
 import { soundFx } from '../utils/audioEffects';
 import { AnimalSafariGame } from './AnimalSafariGame';
+import { LingokidsPlayground } from './LingokidsPlayground';
 
 interface KidsPlaygroundProps {
   daughterName: string;
 }
 
-type GameMode = 'phonics' | 'patterns' | 'counting' | 'shapes' | 'animals';
+type GameMode = 'phonics' | 'patterns' | 'counting' | 'shapes' | 'animals' | 'lingokids';
 
 export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) => {
   const [activeGame, setActiveGame] = useState<GameMode>('animals');
@@ -476,6 +477,7 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
                 } else {
                   soundFx.playPop();
                   if (activeGame === 'animals') speakPrompt("Welcome to Kart Eşleştirme!");
+                  if (activeGame === 'lingokids') speakPrompt("Welcome to Lingokids Playlearning! Let's explore and learn!");
                   if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
                 }
               }}
@@ -504,6 +506,7 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
               <button
                 onClick={() => {
                   if (activeGame === 'animals') speakPrompt("Match the animal pairs in Kart Eşleştirme!");
+                  if (activeGame === 'lingokids') speakPrompt("Welcome to Lingokids! Let's complete the adventure levels together!");
                   if (activeGame === 'phonics') speakPrompt(`Which word starts with letter ${currentPhonics.letter}?`);
                   if (activeGame === 'patterns') speakPrompt("What comes next in the pattern?");
                   if (activeGame === 'counting') speakPrompt(`How many ${currentMath.itemWord} are there in total? Let's count!`);
@@ -519,8 +522,8 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
           </div>
         </div>
 
-        {/* Big Tactile 4.5-Year-Old Game Tabs (KART EŞLEŞTİRME IS FIRST & PROMINENT) */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5 mb-4">
+        {/* Big Tactile 4.5-Year-Old Game Tabs (KART EŞLEŞTİRME IS FIRST & PROMINENT, LINGOKIDS PLAYLEARNING IS HIGHLIGHTED) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-2.5 mb-4">
           {[
             { 
               id: 'animals', 
@@ -529,6 +532,14 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
               desc: 'Hafıza & Doğa', 
               badge: '⭐ 1. Oyun / Ana Oyun',
               isPrimary: true 
+            },
+            { 
+              id: 'lingokids', 
+              label: 'Lingokids Macera', 
+              emoji: '🚀', 
+              desc: 'Playlearning & Harita', 
+              badge: '✨ Lingokids',
+              isLingokids: true 
             },
             { id: 'phonics', label: 'ABC Phonics', emoji: '🔤', desc: 'Harf Sesleri' },
             { id: 'patterns', label: 'Logic Patterns', emoji: '🔷', desc: 'Dizi Bulmacası' },
@@ -543,19 +554,26 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
                   setActiveGame(tab.id as any);
                   soundFx.playPop();
                   if (tab.id === 'animals') speakPrompt("Welcome to Kart Eşleştirme! Let's match the animal pairs!");
+                  if (tab.id === 'lingokids') speakPrompt("Welcome to Lingokids Playlearning! Let's learn and play with Billy, Cowy, Elliot and Lisa!");
                 }}
                 className={`p-2 sm:p-2.5 rounded-2xl border text-center transition-all relative ${
                   isActive
                     ? tab.isPrimary
                       ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 border-amber-500 text-white shadow-md scale-[1.03] ring-2 ring-amber-300'
+                      : tab.isLingokids
+                      ? 'bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 border-sky-500 text-white shadow-md scale-[1.03] ring-2 ring-sky-300'
                       : 'bg-stone-900 border-stone-900 text-white shadow-md scale-[1.02]'
                     : tab.isPrimary
                       ? 'bg-amber-50 border-amber-300 text-amber-950 hover:bg-amber-100 hover:border-amber-400 font-semibold ring-1 ring-amber-200/80 shadow-xs'
+                      : tab.isLingokids
+                      ? 'bg-sky-50 border-sky-300 text-sky-950 hover:bg-sky-100 hover:border-sky-400 font-semibold ring-1 ring-sky-200/80 shadow-xs'
                       : 'bg-white border-stone-200/90 hover:border-stone-300 text-stone-700 hover:bg-stone-50'
                 }`}
               >
                 {tab.badge && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-full bg-amber-500 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow-xs whitespace-nowrap">
+                  <span className={`absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-full text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow-xs whitespace-nowrap ${
+                    tab.isPrimary ? 'bg-amber-500' : 'bg-sky-600'
+                  }`}>
                     {tab.badge}
                   </span>
                 )}
@@ -813,6 +831,15 @@ export const KidsPlayground: React.FC<KidsPlaygroundProps> = ({ daughterName }) 
             voiceEnabled={voiceEnabled}
             speakPrompt={speakPrompt}
             onScore={(points) => setScore((s) => s + points)}
+          />
+        )}
+
+        {/* LINGOKIDS PLAYLEARNING: EDUCATIONAL ADVENTURE PATH, PROGRESSION MAP & CURRICULUM */}
+        {activeGame === 'lingokids' && (
+          <LingokidsPlayground
+            daughterName={daughterName}
+            soundEnabled={soundEnabled}
+            onAddScore={(points) => setScore((s) => s + points)}
           />
         )}
 
