@@ -55,66 +55,64 @@ class SupabaseService {
     }
 
     try {
-      // 1. Try Supabase Auth signInWithPassword if user entered an email or email-like identifier
+      // 1. If user entered an email address with '@', try Supabase Auth signInWithPassword
       if (trimmedUser.includes('@')) {
-        const authRes = await client.auth.signInWithPassword({
-          email: trimmedUser,
-          password: passwordPlain,
-        });
-        if (authRes.data.user) {
-          return {
-            success: true,
-            user: {
-              username: authRes.data.user.email || trimmedUser,
-              fullName: authRes.data.user.user_metadata?.full_name || 'Burak Aydın',
-              role: 'admin'
-            }
-          };
+        try {
+          const authRes = await client.auth.signInWithPassword({
+            email: trimmedUser,
+            password: passwordPlain,
+          });
+          if (authRes.data?.user) {
+            return {
+              success: true,
+              user: {
+                username: authRes.data.user.email || trimmedUser,
+                fullName: authRes.data.user.user_metadata?.full_name || 'Burak Aydın',
+                role: 'admin'
+              }
+            };
+          }
+        } catch {
+          // If auth with email fails, fall through to admin_users table query
         }
       }
 
-      // 2. Try secure RPC function (verify_admin_login) if installed in Supabase
-      try {
-        const { data: rpcData, error: rpcErr } = await client.rpc('verify_admin_login', {
-          p_user: trimmedUser,
-          p_pass: passwordPlain,
-        });
-        if (!rpcErr && rpcData && rpcData.success) {
-          return {
-            success: true,
-            user: {
-              username: rpcData.username || trimmedUser,
-              fullName: rpcData.fullName || 'Burak Aydın',
-              role: rpcData.role || 'admin',
-            },
-          };
-        }
-      } catch {
-        // Fallback to direct query if RPC function does not exist
-      }
-
-      // 3. Query admin_users table in Supabase
+      // 2. Query admin_users table in Supabase by username (case-insensitive)
+      // Note: admin_users table uses 'username' and 'password' (there is no email column)
       const { data, error } = await client
         .from('admin_users')
-        .select('id, username, password, full_name, role, is_active')
-        .or(`username.eq.${trimmedUser},email.eq.${trimmedUser}`)
-        .eq('is_active', true)
+        .select('*')
+        .ilike('username', trimmedUser)
         .maybeSingle();
 
       if (error) {
         console.warn('Supabase admin_users query notice:', error.message);
         return {
           success: false,
-          error: 'Giriş yapılamadı. Kullanıcı adı veya şifrenizi kontrol ediniz.'
+          error: `Veritabanı hatası: ${error.message}`
         };
       }
 
       if (!data) {
-        return { success: false, error: 'Kullanıcı adı bulunamadı veya hesap aktif değil.' };
+        return { 
+          success: false, 
+          error: `"${trimmedUser}" kullanıcı adı bulunamadı. Lütfen veritabanındaki kullanıcı adınızı kontrol ediniz.` 
+        };
       }
 
-      // Check password match against Supabase record
-      if (data.password === passwordPlain) {
+      // Check if account is active (if is_active field is present)
+      if (data.is_active === false) {
+        return { 
+          success: false, 
+          error: 'Bu kullanıcı hesabı pasif durumdadır.' 
+        };
+      }
+
+      // Compare password against database record
+      const dbPassword = String(data.password ?? '');
+      const inputPassword = String(passwordPlain ?? '');
+
+      if (dbPassword === inputPassword || dbPassword.trim() === inputPassword.trim()) {
         return {
           success: true,
           user: {
@@ -124,7 +122,10 @@ class SupabaseService {
           }
         };
       } else {
-        return { success: false, error: 'Hatalı şifre. Lütfen tekrar deneyiniz.' };
+        return { 
+          success: false, 
+          error: 'Hatalı şifre girdiniz. Lütfen şifrenizi kontrol ediniz.' 
+        };
       }
     } catch (err: any) {
       return { success: false, error: `Giriş yapılamadı: ${err.message || 'Bilinmeyen hata'}` };

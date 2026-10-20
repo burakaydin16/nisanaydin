@@ -81,7 +81,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Kullanıcı Adı veya E-posta
+              Kullanıcı Adı
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
@@ -91,7 +91,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 autoFocus
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Kullanıcı adınız"
+                placeholder="Örn: admin"
                 className="w-full pl-9 pr-3 py-2 text-sm bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 focus:bg-white transition-colors"
               />
             </div>
