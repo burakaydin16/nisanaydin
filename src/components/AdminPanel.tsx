@@ -62,7 +62,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     slug: '',
     excerpt: '',
     content: '',
-    author: 'Burak Aydın (Baba)',
+    author: '',
     readTime: '2 dk okuma',
     tags: ['Anılar'],
   });
@@ -143,7 +143,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       slug: '',
       excerpt: '',
       content: '',
-      author: 'Burak Aydın (Baba)',
+      author: '',
       readTime: '2 dk okuma',
       tags: ['Anılar'],
     });
@@ -604,7 +604,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       type="text"
                       value={newPost.author}
                       onChange={(e) => setNewPost({ ...newPost, author: e.target.value })}
-                      placeholder="Burak Aydın (Baba)"
+                      placeholder="Yazar Adı"
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 focus:bg-white"
                     />
                   </div>

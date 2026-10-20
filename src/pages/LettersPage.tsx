@@ -241,7 +241,7 @@ export const LettersPage: React.FC<LettersPageProps> = ({
                       required
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Örn: Burak Aydın"
+                      placeholder="Adınız Soyadınız"
                       className="w-full px-3.5 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900 focus:bg-white"
                     />
                   </div>

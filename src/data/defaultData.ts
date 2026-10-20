@@ -12,7 +12,7 @@ export const initialSiteConfig: SiteConfig = {
     title: "Nisan Aydın — Kişisel Büyüme Günlüğü & Dijital Hatırat",
     description: "Nisan Aydın'ın büyüme günlüğü, mektuplar, anılar ve 4 yaş eğitici oyun odası.",
     keywords: "Nisan Aydın, büyüme günlüğü, hatırat, mektuplar, galeri, nisanaydin.com",
-    author: "Burak Aydın (Baba)",
+    author: "Ailesi",
     ogImage: ""
   },
   protectionEnabled: false,

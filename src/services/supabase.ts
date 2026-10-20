@@ -67,7 +67,7 @@ class SupabaseService {
               success: true,
               user: {
                 username: authRes.data.user.email || trimmedUser,
-                fullName: authRes.data.user.user_metadata?.full_name || 'Burak Aydın',
+                fullName: authRes.data.user.user_metadata?.full_name || trimmedUser,
                 role: 'admin'
               }
             };
@@ -77,7 +77,34 @@ class SupabaseService {
         }
       }
 
-      // 2. Query admin_users table in Supabase by username (case-insensitive)
+      // 2. Try secure PostgreSQL RPC function first (keeps passwords hidden from public API)
+      try {
+        const { data: rpcRes, error: rpcErr } = await client.rpc('verify_admin_login', {
+          p_username: trimmedUser,
+          p_password: passwordPlain
+        });
+        if (!rpcErr && rpcRes) {
+          if (rpcRes.success) {
+            return {
+              success: true,
+              user: {
+                username: rpcRes.username || trimmedUser,
+                fullName: rpcRes.fullName || trimmedUser,
+                role: rpcRes.role || 'admin'
+              }
+            };
+          } else if (rpcRes.error) {
+            return {
+              success: false,
+              error: rpcRes.error
+            };
+          }
+        }
+      } catch {
+        // If RPC is not created yet, continue to fallback
+      }
+
+      // 3. Fallback: Query admin_users table in Supabase by username (case-insensitive)
       // Note: admin_users table uses 'username' and 'password' (there is no email column)
       const { data, error } = await client
         .from('admin_users')
@@ -117,7 +144,7 @@ class SupabaseService {
           success: true,
           user: {
             username: data.username,
-            fullName: data.full_name || 'Burak Aydın',
+            fullName: data.full_name || data.username,
             role: data.role || 'admin'
           }
         };
@@ -181,7 +208,7 @@ class SupabaseService {
         content: row.content || '',
         readTime: row.read_time || '3 dk okuma',
         category: row.category || 'mektup',
-        author: row.author || 'Burak Aydın (Baba)',
+        author: row.author || 'Aile',
         tags: Array.isArray(row.tags) ? row.tags : [],
       }));
     } catch {

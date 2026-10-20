@@ -50,7 +50,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-stone-900 leading-[1.12]">
                 Hoş Geldiniz, Burası{' '}
-                <span className="text-stone-900 underline decoration-rose-300 decoration-wavy decoration-2">
+                <span className="text-stone-900">
                   {config.daughterName}
                 </span>
                 'ın Dünyası
