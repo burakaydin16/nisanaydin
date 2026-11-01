@@ -4,4 +4,5 @@ export type AppRoute =
   | '/galeri'
   | '/mektuplar'
   | '/oyun'
+  | '/boyama'
   | '/admin';

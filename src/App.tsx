@@ -15,6 +15,7 @@ import { MilestonesPage } from './pages/MilestonesPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { LettersPage } from './pages/LettersPage';
 import { GamePage } from './pages/GamePage';
+import { PaintingStudioPage } from './pages/PaintingStudioPage';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { supabaseService } from './services/supabase';
@@ -239,6 +240,14 @@ export default function App() {
 
         {currentRoute === '/oyun' && (
           <GamePage
+            config={config}
+            onNavigate={navigate}
+            onOpenAdmin={handleOpenAdmin}
+          />
+        )}
+
+        {currentRoute === '/boyama' && (
+          <PaintingStudioPage
             config={config}
             onNavigate={navigate}
             onOpenAdmin={handleOpenAdmin}

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, Sparkles, Volume2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Volume2, Palette } from 'lucide-react';
 import { SiteConfig } from '../types/site';
 import { AppRoute } from '../types/routes';
 import { KidsPlayground } from '../components/KidsPlayground';
@@ -56,8 +56,18 @@ export const GamePage: React.FC<GamePageProps> = ({
           </h1>
         </div>
 
-        {/* Sağ: Ses Durumu Rozeti */}
+        {/* Sağ: Boyama Odası Geçiş & Ses Durumu Rozeti */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate('/boyama')}
+            className="px-3 py-1.5 rounded-xl bg-linear-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+            title="Sihirli Boyama & Hayal Odası"
+          >
+            <Palette className="w-3.5 h-3.5 text-rose-200" />
+            <span className="hidden sm:inline">Sihirli Boyama</span>
+            <span className="sm:hidden">Boyama</span>
+          </button>
+
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-bold">
             <Volume2 className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
             <span className="hidden sm:inline">Ses Açık 🔊</span>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Heart, Calendar, MapPin, Sparkles, BookOpen, 
-  Camera, ArrowRight, ShieldCheck, Gamepad2, Award, Clock
+  Camera, ArrowRight, ShieldCheck, Gamepad2, Award, Clock, Palette
 } from 'lucide-react';
 import { SiteConfig, Milestone, BlogPost, GalleryItem, GuestbookEntry } from '../types/site';
 import { AppRoute } from '../types/routes';
@@ -98,6 +98,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <span>Oyun & Öğrenme Odası</span>
                 </button>
+
+                <button
+                  onClick={() => onNavigate('/boyama')}
+                  className="px-5 py-2.5 bg-linear-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xs flex items-center gap-2"
+                >
+                  <Palette className="w-4 h-4 text-rose-200" />
+                  <span>Sihirli Boyama & Hayal</span>
+                </button>
               </div>
 
             </div>
@@ -163,7 +171,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           
           {/* Card 1: Milestones */}
           <div 
@@ -260,6 +268,33 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <div className="mt-6 pt-4 border-t border-rose-200/60 flex items-center justify-between text-xs font-bold text-rose-900 group-hover:text-rose-700 transition-colors">
               <span>Oyun Odasına Gir 🚀</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* Card 5: Sihirli Boyama & Hayal Atölyesi */}
+          <div 
+            onClick={() => onNavigate('/boyama')}
+            className="group p-6 rounded-2xl bg-linear-to-b from-indigo-50/60 to-rose-50/60 border border-indigo-200 hover:border-indigo-300 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden"
+          >
+            <div className="absolute top-3 right-3 px-2 py-0.5 bg-indigo-100 text-indigo-900 rounded text-[10px] font-bold flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-indigo-600" />
+              <span>YAPAY ZEKA</span>
+            </div>
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Palette className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div className="text-xs font-mono text-indigo-400 mb-1">/boyama</div>
+              <h3 className="font-display font-bold text-lg text-indigo-950 mb-2 flex items-center gap-1.5">
+                <span>Sihirli Boyama & Hayal</span>
+              </h3>
+              <p className="text-xs text-indigo-900/80 line-clamp-3 leading-relaxed">
+                Paint gibi boyama tuvali! Çocuğunuz çizsin, yapay zeka çizimi hayalindeki gerçek resme ve illüstrasyona dönüştürsün.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-indigo-200/60 flex items-center justify-between text-xs font-bold text-indigo-900 group-hover:text-indigo-700 transition-colors">
+              <span>Boyama & Hayal Odası ✨</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>

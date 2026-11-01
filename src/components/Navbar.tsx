@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, LayoutDashboard, Menu, X, Heart } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Menu, X, Heart, Palette } from 'lucide-react';
 import { SiteConfig } from '../types/site';
 import { AppRoute } from '../types/routes';
 
@@ -27,6 +27,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       route: '/oyun', 
       label: 'Oyun Odası', 
       icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" />,
+      isSpecial: true 
+    },
+    { 
+      route: '/boyama', 
+      label: 'Sihirli Boyama', 
+      icon: <Palette className="w-3.5 h-3.5 text-rose-500" />,
       isSpecial: true 
     },
   ];
