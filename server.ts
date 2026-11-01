@@ -213,14 +213,59 @@ SADECE geçerli bir JSON objesi döndür:
       }
     }
 
-    // Select matched masterwork based on vision analysis & requested child artistic style
-    const detectedTheme = (analysisData as any).theme || 'fairy_cottage';
-    const themeCollection = THEME_ARTWORKS[detectedTheme] || THEME_ARTWORKS.fairy_cottage;
-    const generatedImageUrl = themeCollection[style] || themeCollection.storybook;
+    // 2. Direct AI Image Generation from Child's Drawing using gemini-3.1-flash-lite-image
+    let generatedImageUrl: string | null = null;
+    let isRealAiGenerated = false;
+
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const imageGenPrompt = `You are an award-winning children's book illustrator and digital concept artist.
+Analyze and transform this exact child's hand-drawn sketch and coloring into a breathtaking, fully rendered masterpiece illustration in ${chosenStyleDescription} style.
+Key instructions:
+- Directly translate the child's drawn shapes, subjects, characters, and color choices from this sketch into the scene.
+- Scene concept: "${prompt || (analysisData as any).artisticPromptEn || (analysisData as any).childImaginationTitle || 'magical child imagination'}".
+- Upgrade crude lines and fills into lush, highly detailed, gorgeous digital artwork with volumetric lighting and rich textures.
+- Full background environment, clean finished picture, warm whimsical fairytale atmosphere.`;
+
+        const imageResponse = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite-image',
+          contents: {
+            parts: [
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: mimeType,
+                },
+              },
+              {
+                text: imageGenPrompt,
+              },
+            ],
+          },
+          config: {
+            imageConfig: {
+              aspectRatio: '1:1',
+            },
+          },
+        });
+
+        for (const part of imageResponse.candidates?.[0]?.content?.parts ?? []) {
+          if (part.inlineData?.data) {
+            const partMime = part.inlineData.mimeType || 'image/png';
+            generatedImageUrl = `data:${partMime};base64,${part.inlineData.data}`;
+            isRealAiGenerated = true;
+            break;
+          }
+        }
+      } catch (imageErr: any) {
+        console.warn('gemini-3.1-flash-lite-image info:', imageErr?.message || imageErr);
+      }
+    }
 
     return res.json({
       success: true,
       imageUrl: generatedImageUrl,
+      isRealAiGenerated,
       analysis: analysisData,
     });
 

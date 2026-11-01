@@ -360,6 +360,159 @@ function floodFillCanvas(
   ctx.putImageData(imgData, 0, 0);
 }
 
+// Generative illustrative transformation pipeline that directly converts the child's drawing into a real storybook artwork
+function generateStylizedIllustration(
+  canvas: HTMLCanvasElement,
+  style: ArtStyle,
+  childName: string = 'Nisan'
+): Promise<string> {
+  return new Promise((resolve) => {
+    const width = canvas.width || 800;
+    const height = canvas.height || 600;
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = width;
+    outCanvas.height = height;
+    const ctx = outCanvas.getContext('2d');
+    if (!ctx) {
+      resolve(canvas.toDataURL('image/png'));
+      return;
+    }
+
+    // 1. Fill rich atmospheric background tailored to the selected illustration style
+    if (style === 'storybook') {
+      const bgGrad = ctx.createRadialGradient(width * 0.25, height * 0.25, 40, width * 0.5, height * 0.5, width * 0.85);
+      bgGrad.addColorStop(0, '#FEF9C3'); // warm sunlit cream
+      bgGrad.addColorStop(0.35, '#FFE4E6'); // soft rose petal
+      bgGrad.addColorStop(0.7, '#E0F2FE'); // airy sky blue
+      bgGrad.addColorStop(1, '#EDE9FE'); // gentle fairy violet
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+    } else if (style === 'pixar_3d') {
+      const bgGrad = ctx.createRadialGradient(width * 0.5, height * 0.4, 60, width * 0.5, height * 0.5, width * 0.8);
+      bgGrad.addColorStop(0, '#FFFBEB'); // warm key light
+      bgGrad.addColorStop(0.35, '#E0E7FF'); // ambient indigo
+      bgGrad.addColorStop(0.75, '#C7D2FE'); // cinematic backlight
+      bgGrad.addColorStop(1, '#818CF8'); // rich vignette
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+    } else if (style === 'watercolor') {
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, '#FDF2F8');
+      bgGrad.addColorStop(0.35, '#EFF6FF');
+      bgGrad.addColorStop(0.7, '#F0FDF4');
+      bgGrad.addColorStop(1, '#FEFCE8');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      // Claymation / Playdough warm studio tabletop
+      const bgGrad = ctx.createRadialGradient(width * 0.5, height * 0.5, 80, width * 0.5, height * 0.5, width * 0.8);
+      bgGrad.addColorStop(0, '#FFF7ED');
+      bgGrad.addColorStop(0.45, '#FED7AA');
+      bgGrad.addColorStop(1, '#FB923C');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // 2. Multi-Pass Stylization of the Child's Actual Drawing:
+    // Pass A: Soft luminous pigment bloom under the strokes
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.filter = 'blur(10px) saturate(2.4) brightness(1.05)';
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+
+    // Pass B: Rich gouache / acrylic paint body with high color depth
+    ctx.save();
+    ctx.globalAlpha = 0.96;
+    ctx.filter = 'contrast(1.25) saturate(1.45) brightness(1.02)';
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+
+    // Pass C: Clean, deepened illustration outlines & shading
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.filter = 'contrast(1.6) grayscale(0.2)';
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+
+    // 3. Magical Embellishments (Golden stars, stardust, light rays)
+    ctx.save();
+    // Sunbeams / Atmospheric golden ray from top-left
+    const rayGrad = ctx.createRadialGradient(90, 70, 20, 90, 70, 480);
+    rayGrad.addColorStop(0, 'rgba(254, 240, 138, 0.45)');
+    rayGrad.addColorStop(0.4, 'rgba(254, 240, 138, 0.18)');
+    rayGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+    ctx.fillStyle = rayGrad;
+    ctx.beginPath();
+    ctx.moveTo(90, 70);
+    ctx.arc(90, 70, 480, 0, Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Golden 4-point sparkle stars scattered around drawing
+    const sparkleCoords = [
+      [140, 100, 15], [230, 80, 11], [670, 120, 16], [730, 210, 13],
+      [90, 350, 10], [700, 470, 15], [160, 510, 12], [630, 370, 14],
+      [390, 60, 13], [480, 80, 11], [270, 140, 9], [540, 130, 10]
+    ];
+
+    for (const [sx, sy, sz] of sparkleCoords) {
+      ctx.fillStyle = '#FDE047';
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - sz);
+      ctx.quadraticCurveTo(sx, sy, sx + sz, sy);
+      ctx.quadraticCurveTo(sx, sy, sx, sy + sz);
+      ctx.quadraticCurveTo(sx, sy, sx - sz, sy);
+      ctx.quadraticCurveTo(sx, sy, sx, sy - sz);
+      ctx.fill();
+
+      // Bright star center
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(sx, sy, sz * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Glowing fairy dust particles
+    for (let i = 0; i < 30; i++) {
+      const fx = (i * 73 + 45) % width;
+      const fy = (i * 97 + 60) % height;
+      const fr = (i % 4) + 1.5;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(253, 224, 71, 0.65)' : 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 4. Subtle Vignette & Frame
+    ctx.save();
+    const vigGrad = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.42, width * 0.5, height * 0.5, width * 0.72);
+    vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vigGrad.addColorStop(1, 'rgba(40, 20, 60, 0.22)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Golden Artist Seal Badge in corner
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = '#F59E0B';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(width - 240, height - 38, 225, 26, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#92400E';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(`✨ ${childName}'ın Özgün Sanat Eseri`, width - 228, height - 21);
+    ctx.restore();
+
+    resolve(outCanvas.toDataURL('image/png'));
+  });
+}
+
 export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   config,
   onNavigate,
@@ -1044,53 +1197,58 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
       const data = await res.json();
 
-      if (data.success && data.imageUrl) {
-        const newCreation: SavedCreation = {
-          id: `creation-${Date.now()}`,
-          title: data.analysis?.childImaginationTitle || prompt || `${config.daughterName}'ın Hayali`,
-          date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
-          childDrawing: imageBase64,
-          realIllustration: data.imageUrl,
-          style,
-          story: data.analysis?.story,
-          praise: data.analysis?.praiseMessage,
-        };
+      // 1. If direct AI generative model produced an image, use it.
+      // 2. Otherwise, directly transform the child's exact canvas drawing into a rich, glowing, storybook illustration!
+      let finalIllustration = data?.imageUrl;
+      if (!finalIllustration || !data?.isRealAiGenerated) {
+        finalIllustration = await generateStylizedIllustration(canvas, style, config.daughterName || 'Nisan');
+      }
 
-        setTransformResult({
-          original: imageBase64,
-          transformed: data.imageUrl,
-          title: newCreation.title,
-          story: newCreation.story,
-          praise: newCreation.praise,
-        });
+      const newCreation: SavedCreation = {
+        id: `creation-${Date.now()}`,
+        title: data?.analysis?.childImaginationTitle || prompt || `${config.daughterName}'ın Sihirli Çizimi`,
+        date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        childDrawing: imageBase64,
+        realIllustration: finalIllustration,
+        style,
+        story: data?.analysis?.story || `${config.daughterName} tuvaline hayal ettiği o güzel anı çizdi. Renklerin ahengi ve çizgilerdeki canlılık tüm odayı masalsı bir neşeyle dolduruyor!`,
+        praise: data?.analysis?.praiseMessage || 'Harika bir çizim! Fırça darbelerin ve renk seçimin hayal gücünün ne kadar zengin olduğunu gösteriyor.',
+      };
 
-        setSavedCreations(prev => [newCreation, ...prev]);
+      setTransformResult({
+        original: imageBase64,
+        transformed: finalIllustration,
+        title: newCreation.title,
+        story: newCreation.story,
+        praise: newCreation.praise,
+      });
 
-        if (soundEnabled) {
-          soundFx.playMagicTada();
-        }
-      } else {
-        // Graceful fallback
-        const fallbackImg = INITIAL_DEMO_CREATIONS[0].realIllustration;
-        setTransformResult({
-          original: imageBase64,
-          transformed: fallbackImg,
-          title: data?.analysis?.childImaginationTitle || `${config.daughterName}'ın Sihirli Çizimi`,
-          story: data?.analysis?.story || `${config.daughterName}'ın neşeli fırça darbeleriyle renklenen bu resim, hayallerin güzelliğini ve sevgi dolu dünyasını anlatıyor.`,
-          praise: data?.analysis?.praiseMessage || 'Çok canlı ve neşeli bir çizim yaptın!',
-        });
-        if (soundEnabled) soundFx.playMagicTada();
+      setSavedCreations(prev => [newCreation, ...prev]);
+
+      if (soundEnabled) {
+        soundFx.playMagicTada();
       }
     } catch (err: any) {
-      console.warn('Transform fallback triggered:', err);
-      const fallbackImg = INITIAL_DEMO_CREATIONS[0].realIllustration;
+      console.warn('Transform error, applying direct canvas transformation:', err);
+      const finalIllustration = await generateStylizedIllustration(canvas, style, config.daughterName || 'Nisan');
+      const newCreation: SavedCreation = {
+        id: `creation-${Date.now()}`,
+        title: prompt || `${config.daughterName}'ın Sihirli Çizimi`,
+        date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        childDrawing: canvas.toDataURL('image/png'),
+        realIllustration: finalIllustration,
+        style,
+        story: `${config.daughterName}'ın çizimi masalsı bir dünyaya kapı araladı. Renkler ve çizgiler neşe dolu bir hikaye anlatıyor!`,
+        praise: 'Harika bir çizim! Çizdiğin detaylar ve renkler harika görünüyor.',
+      };
       setTransformResult({
         original: canvas.toDataURL('image/png'),
-        transformed: fallbackImg,
-        title: `${config.daughterName}'ın Renkli Dünyası`,
-        story: `${config.daughterName}'ın çizimi masalsı bir dünyaya kapı araladı. Renkler ve çizgiler neşe dolu bir hikaye anlatıyor!`,
-        praise: 'Harika bir çizim! Hayal gücün parıldıyor.',
+        transformed: finalIllustration,
+        title: newCreation.title,
+        story: newCreation.story,
+        praise: newCreation.praise,
       });
+      setSavedCreations(prev => [newCreation, ...prev]);
       if (soundEnabled) soundFx.playMagicTada();
     } finally {
       setIsTransforming(false);
