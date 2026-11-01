@@ -20,6 +20,9 @@ export function normalizePath(path: string): AppRoute {
   if (clean.startsWith('/oyun') || clean.startsWith('/oyunlar') || clean.startsWith('/kids') || clean.startsWith('/lab')) {
     return '/oyun';
   }
+  if (clean.startsWith('/boyama') || clean.startsWith('/paint') || clean.startsWith('/cizim') || clean.startsWith('/resim') || clean.startsWith('/studio')) {
+    return '/boyama';
+  }
   if (clean.startsWith('/admin') || clean.startsWith('/yonetim') || clean.startsWith('/panel')) {
     return '/admin';
   }

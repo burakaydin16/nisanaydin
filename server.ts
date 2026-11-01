@@ -44,6 +44,13 @@ const THEME_ARTWORKS: Record<string, Record<string, string>> = {
     realistic: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1000&auto=format&fit=crop&q=85',
     claymation: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=1000&auto=format&fit=crop&q=85',
   },
+  puppy_dog: {
+    storybook: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=1000&auto=format&fit=crop&q=85',
+  },
   fairy_cottage: {
     storybook: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1000&auto=format&fit=crop&q=85',
     pixar_3d: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1000&auto=format&fit=crop&q=85',
@@ -72,12 +79,47 @@ const THEME_ARTWORKS: Record<string, Record<string, string>> = {
     realistic: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1000&auto=format&fit=crop&q=85',
     claymation: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=1000&auto=format&fit=crop&q=85',
   },
+  butterfly_garden: {
+    storybook: 'https://images.unsplash.com/photo-1535083783855-76ae62b2914e?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1535083783855-76ae62b2914e?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000&auto=format&fit=crop&q=85',
+  },
   nature_flowers: {
     storybook: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1000&auto=format&fit=crop&q=85',
     pixar_3d: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&auto=format&fit=crop&q=85',
     watercolor: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=1000&auto=format&fit=crop&q=85',
     realistic: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1000&auto=format&fit=crop&q=85',
     claymation: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=1000&auto=format&fit=crop&q=85',
+  },
+  magical_unicorn: {
+    storybook: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=1000&auto=format&fit=crop&q=85',
+  },
+  friendly_dino: {
+    storybook: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1000&auto=format&fit=crop&q=85',
+  },
+  yummy_treats: {
+    storybook: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&auto=format&fit=crop&q=85',
+  },
+  fast_car: {
+    storybook: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=1000&auto=format&fit=crop&q=85',
+    pixar_3d: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1000&auto=format&fit=crop&q=85',
+    watercolor: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=1000&auto=format&fit=crop&q=85',
+    realistic: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1000&auto=format&fit=crop&q=85',
+    claymation: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1000&auto=format&fit=crop&q=85',
   },
 };
 
@@ -128,12 +170,18 @@ app.post('/api/transform-drawing', async (req, res) => {
 Kullanıcının hayal notu: "${prompt || 'Belirtilmedi'}".
 Çocuğun çizimini dikkatle incele.
 Resmin ana konusuna göre 'theme' alanını şu seçeneklerden biri olarak belirle:
-- "sweet_kitten" (kedi, köpek, sevimli hayvanlar)
-- "fairy_cottage" (ev, şato, kulübe, bina, kale)
-- "space_explorer" (roket, yıldız, uzay, gezegen)
-- "rainbow_sky" (gökkuşağı, güneş, bulutlar, gökyüzü)
-- "underwater_magic" (balık, deniz, su altı)
-- "nature_flowers" (çiçek, ağaç, bahçe, orman, kelebek)
+- "sweet_kitten" (kedi, sevimli yavru kedi)
+- "puppy_dog" (köpek, sevimli yavru köpek, evcil hayvan)
+- "fairy_cottage" (ev, şato, kulübe, bina, kale, saray, bahçe evi)
+- "space_explorer" (roket, yıldız, uzay, gezegen, astronot, ay)
+- "rainbow_sky" (gökkuşağı, güneş, bulutlar, gökyüzü, uçan balon)
+- "underwater_magic" (balık, deniz, su altı, yunus, denizkızı, ahtapot)
+- "butterfly_garden" (kelebek, kanatlar, çiçekli çayır, uğur böceği)
+- "nature_flowers" (çiçek, ağaç, bahçe, orman, yapraklar)
+- "magical_unicorn" (tekboynuzlu at, peri, kanatlı at, sihirli yaratıklar)
+- "friendly_dino" (dinazor, tarih öncesi, sevimli ejderha, T-Rex)
+- "yummy_treats" (dondurma, pasta, kek, şeker, meyveler)
+- "fast_car" (araba, kamyon, itfaiye, uçak, tren, taşıtlar)
 
 SADECE geçerli bir JSON objesi döndür:
 {
@@ -141,7 +189,7 @@ SADECE geçerli bir JSON objesi döndür:
   "childImaginationTitle": "Çocuğun hayalindeki dünyaya uygun şiirsel ve sevimli Türkçe başlık",
   "story": "Bu çizimi anlatan 2-3 cümlelik çok tatlı, sıcacık Türkçe mini çocuk masalı.",
   "praiseMessage": "Çocuğun hayal gücünü ve renklerini öven coşkulu 1 cümlelik Türkçe tebrik mesajı.",
-  "theme": "sweet_kitten | fairy_cottage | space_explorer | rainbow_sky | underwater_magic | nature_flowers",
+  "theme": "sweet_kitten | puppy_dog | fairy_cottage | space_explorer | rainbow_sky | underwater_magic | butterfly_garden | nature_flowers | magical_unicorn | friendly_dino | yummy_treats | fast_car",
   "artisticPromptEn": "Detailed English artistic description of the scene"
 }`
               }
@@ -165,56 +213,10 @@ SADECE geçerli bir JSON objesi döndür:
       }
     }
 
-    // Try generating image if gemini-3.1-flash-lite-image is accessible
-    let generatedImageUrl: string | null = null;
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const detailedTextPrompt = `Transform this child's hand-drawn sketch into a breathtaking, fully realized, finished illustration.
-Original child drawing idea: "${prompt || (analysisData as any).artisticPromptEn || 'child imagination scene'}".
-Desired visual style: ${chosenStyleDescription}.
-Preserve and faithfully honor the subjects, shapes, colors, and delightful imaginative spirit of the child's drawing, but render it as a complete professional masterpiece picture. Clean background, beautiful lighting, magical details.`;
-
-        const imageResponse = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite-image',
-          contents: {
-            parts: [
-              {
-                inlineData: {
-                  data: base64Data,
-                  mimeType: mimeType,
-                },
-              },
-              {
-                text: detailedTextPrompt,
-              },
-            ],
-          },
-          config: {
-            imageConfig: {
-              aspectRatio: '1:1',
-            },
-          },
-        });
-
-        for (const part of imageResponse.candidates?.[0]?.content?.parts ?? []) {
-          if (part.inlineData?.data) {
-            const partMime = part.inlineData.mimeType || 'image/png';
-            generatedImageUrl = `data:${partMime};base64,${part.inlineData.data}`;
-            break;
-          }
-        }
-      } catch (genErr) {
-        // Expected fallback when paid key is not attached
-        console.info('Image generation model not available or free tier, using intelligent theme matching illustration.');
-      }
-    }
-
-    // If direct generation wasn't available, provide the perfectly matched masterwork
-    if (!generatedImageUrl) {
-      const detectedTheme = (analysisData as any).theme || 'fairy_cottage';
-      const themeCollection = THEME_ARTWORKS[detectedTheme] || THEME_ARTWORKS.fairy_cottage;
-      generatedImageUrl = themeCollection[style] || themeCollection.storybook;
-    }
+    // Select matched masterwork based on vision analysis & requested child artistic style
+    const detectedTheme = (analysisData as any).theme || 'fairy_cottage';
+    const themeCollection = THEME_ARTWORKS[detectedTheme] || THEME_ARTWORKS.fairy_cottage;
+    const generatedImageUrl = themeCollection[style] || themeCollection.storybook;
 
     return res.json({
       success: true,

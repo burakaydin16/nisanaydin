@@ -182,6 +182,50 @@ class AudioManager {
       // Speech synthesis fallback
     }
   }
+
+  speakTurkish(text: string) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'tr-TR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.1;
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const trVoice = voices.find(v => v.lang.startsWith('tr') || v.lang === 'tr-TR');
+        if (trVoice) {
+          utterance.voice = trVoice;
+        }
+      }
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Speech synthesis fallback
+    }
+  }
+
+  playMagicTada() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.07);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.07 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.07);
+        osc.stop(ctx.currentTime + i * 0.07 + 0.35);
+      });
+    } catch {
+      // AudioContext unavailable
+    }
+  }
 }
 
 export const soundFx = new AudioManager();

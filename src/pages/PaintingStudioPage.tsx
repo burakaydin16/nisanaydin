@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Palette, Sparkles, Undo, Redo, Trash2, Download, Wand2, RefreshCw, 
   Layers, Smile, Heart, Star, Sun, Cloud, Moon, Zap, Cat, Rocket, Home,
-  Info, Check, Eye, ChevronRight, Sliders, Image as ImageIcon
+  Info, Check, Eye, ChevronRight, Sliders, Volume2, VolumeX, Award,
+  Paintbrush, PaintBucket, Sparkle
 } from 'lucide-react';
 import { SiteConfig } from '../types/site';
 import { AppRoute } from '../types/routes';
+import { soundFx } from '../utils/audioEffects';
 
 interface PaintingStudioPageProps {
   config: SiteConfig;
@@ -13,7 +15,7 @@ interface PaintingStudioPageProps {
   onOpenAdmin: () => void;
 }
 
-type ToolType = 'brush' | 'pencil' | 'marker' | 'glitter' | 'eraser' | 'stamp';
+type ToolType = 'brush' | 'rainbow' | 'bucket' | 'glitter' | 'crayon' | 'eraser' | 'stamp';
 type ArtStyle = 'storybook' | 'pixar_3d' | 'watercolor' | 'realistic' | 'claymation';
 
 interface SavedCreation {
@@ -27,112 +29,223 @@ interface SavedCreation {
   praise?: string;
 }
 
-// Preset color palette for young children
+// 16 Vivid, child-friendly colors
 const PALETTE = [
-  '#E11D48', // Gül kırmızısı
-  '#F43F5E', // Şeker pembesi
-  '#FB7185', // Açık pembe
-  '#EA580C', // Turuncu
-  '#F59E0B', // Güneş sarısı
-  '#FDE047', // Parlak sarı
-  '#16A34A', // Çimen yeşili
-  '#84CC16', // Fıstık yeşili
-  '#0EA5E9', // Gökyüzü mavisi
-  '#2563EB', // Okyanus mavisi
-  '#6366F1', // Çivit mavisi
-  '#9333EA', // Büyülü mor
-  '#D946EF', // Leylak
-  '#854D0E', // Çikolata kahvesi
-  '#1C1917', // Gece siyahı
-  '#FFFFFF', // Kar beyazı
+  { hex: '#E11D48', name: 'Gül Kırmızısı' },
+  { hex: '#F43F5E', name: 'Şeker Pembesi' },
+  { hex: '#FB7185', name: 'Açık Pembe' },
+  { hex: '#EA580C', name: 'Portakal Turuncusu' },
+  { hex: '#F59E0B', name: 'Güneş Sarısı' },
+  { hex: '#FDE047', name: 'Parlak Sarı' },
+  { hex: '#16A34A', name: 'Çimen Yeşili' },
+  { hex: '#84CC16', name: 'Fıstık Yeşili' },
+  { hex: '#0EA5E9', name: 'Gökyüzü Mavisi' },
+  { hex: '#2563EB', name: 'Okyanus Mavisi' },
+  { hex: '#6366F1', name: 'Çivit Mavisi' },
+  { hex: '#9333EA', name: 'Büyülü Mor' },
+  { hex: '#D946EF', name: 'Pamuk Şeker' },
+  { hex: '#854D0E', name: 'Çikolata' },
+  { hex: '#1C1917', name: 'Gece Siyahı' },
+  { hex: '#FFFFFF', name: 'Kar Beyazı' },
 ];
 
+// Stamps for 4-year-olds
 const STAMPS = [
-  { id: 'star', label: 'Yıldız', icon: Star, draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    const spikes = 5;
-    const outer = size * 1.5;
-    const inner = size * 0.7;
-    let rot = Math.PI / 2 * 3;
-    let cx = x;
-    let cy = y;
-    const step = Math.PI / spikes;
-    ctx.moveTo(cx, cy - outer);
-    for (let i = 0; i < spikes; i++) {
-      cx = x + Math.cos(rot) * outer;
-      cy = y + Math.sin(rot) * outer;
-      ctx.lineTo(cx, cy);
-      rot += step;
-      cx = x + Math.cos(rot) * inner;
-      cy = y + Math.sin(rot) * inner;
-      ctx.lineTo(cx, cy);
-      rot += step;
-    }
-    ctx.lineTo(x, y - outer);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }},
-  { id: 'heart', label: 'Kalp', icon: Heart, draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    const d = size * 1.4;
-    ctx.moveTo(x, y + d / 4);
-    ctx.bezierCurveTo(x, y, x - d / 2, y - d / 2, x - d, y);
-    ctx.bezierCurveTo(x - d * 1.2, y + d / 2, x - d / 2, y + d, x, y + d * 1.4);
-    ctx.bezierCurveTo(x + d / 2, y + d, x + d * 1.2, y + d / 2, x + d, y);
-    ctx.bezierCurveTo(x + d / 2, y - d / 2, x, y, x, y + d / 4);
-    ctx.fill();
-    ctx.restore();
-  }},
-  { id: 'sun', label: 'Güneş', icon: Sun, draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * Math.PI) / 4;
-      const x1 = x + Math.cos(angle) * (size * 1.1);
-      const y1 = y + Math.sin(angle) * (size * 1.1);
-      const x2 = x + Math.cos(angle) * (size * 1.6);
-      const y2 = y + Math.sin(angle) * (size * 1.6);
+  {
+    id: 'star',
+    label: 'Yıldız',
+    emoji: '⭐',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+      const spikes = 5;
+      const outer = size * 1.6;
+      const inner = size * 0.75;
+      let rot = (Math.PI / 2) * 3;
+      let cx = x;
+      let cy = y;
+      const step = Math.PI / spikes;
+      ctx.moveTo(cx, cy - outer);
+      for (let i = 0; i < spikes; i++) {
+        cx = x + Math.cos(rot) * outer;
+        cy = y + Math.sin(rot) * outer;
+        ctx.lineTo(cx, cy);
+        rot += step;
+        cx = x + Math.cos(rot) * inner;
+        cy = y + Math.sin(rot) * inner;
+        ctx.lineTo(cx, cy);
+        rot += step;
+      }
+      ctx.lineTo(x, y - outer);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     }
-    ctx.restore();
-  }},
-  { id: 'cloud', label: 'Bulut', icon: Cloud, draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.9, 0, Math.PI * 2);
-    ctx.arc(x + size * 0.7, y - size * 0.3, size * 0.8, 0, Math.PI * 2);
-    ctx.arc(x + size * 1.4, y, size * 0.9, 0, Math.PI * 2);
-    ctx.arc(x + size * 0.7, y + size * 0.2, size * 0.9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }},
+  },
+  {
+    id: 'heart',
+    label: 'Kalp',
+    emoji: '❤️',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const d = size * 1.5;
+      ctx.moveTo(x, y + d / 4);
+      ctx.bezierCurveTo(x, y, x - d / 2, y - d / 2, x - d, y);
+      ctx.bezierCurveTo(x - d * 1.2, y + d / 2, x - d / 2, y + d, x, y + d * 1.4);
+      ctx.bezierCurveTo(x + d / 2, y + d, x + d * 1.2, y + d / 2, x + d, y);
+      ctx.bezierCurveTo(x + d / 2, y - d / 2, x, y, x, y + d / 4);
+      ctx.fill();
+      ctx.restore();
+    }
+  },
+  {
+    id: 'sun',
+    label: 'Güneş',
+    emoji: '☀️',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const x1 = x + Math.cos(angle) * (size * 1.1);
+        const y1 = y + Math.sin(angle) * (size * 1.1);
+        const x2 = x + Math.cos(angle) * (size * 1.6);
+        const y2 = y + Math.sin(angle) * (size * 1.6);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  },
+  {
+    id: 'cloud',
+    label: 'Bulut',
+    emoji: '☁️',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.9, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.7, y - size * 0.3, size * 0.8, 0, Math.PI * 2);
+      ctx.arc(x + size * 1.4, y, size * 0.9, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.7, y + size * 0.2, size * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  },
+  {
+    id: 'flower',
+    label: 'Çiçek',
+    emoji: '🌸',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      for (let i = 0; i < 5; i++) {
+        const angle = (i * Math.PI * 2) / 5;
+        const px = x + Math.cos(angle) * size;
+        const py = y + Math.sin(angle) * size;
+        ctx.beginPath();
+        ctx.arc(px, py, size * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // center
+      ctx.fillStyle = '#FDE047';
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  },
+  {
+    id: 'butterfly',
+    label: 'Kelebek',
+    emoji: '🦋',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      // left wings
+      ctx.beginPath();
+      ctx.ellipse(x - size, y - size * 0.5, size, size * 0.7, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.ellipse(x - size * 0.8, y + size * 0.5, size * 0.7, size * 0.5, Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+      // right wings
+      ctx.beginPath();
+      ctx.ellipse(x + size, y - size * 0.5, size, size * 0.7, Math.PI / 6, 0, Math.PI * 2);
+      ctx.ellipse(x + size * 0.8, y + size * 0.5, size * 0.7, size * 0.5, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+      // body
+      ctx.fillStyle = '#1C1917';
+      ctx.beginPath();
+      ctx.ellipse(x, y, size * 0.25, size * 1.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  },
+  {
+    id: 'paw',
+    label: 'Kedi Patisi',
+    emoji: '🐾',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      // main pad
+      ctx.beginPath();
+      ctx.ellipse(x, y + size * 0.3, size * 0.8, size * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 4 toe pads
+      const angles = [-0.7, -0.25, 0.25, 0.7];
+      for (const a of angles) {
+        const tx = x + Math.sin(a) * size * 1.1;
+        const ty = y - Math.cos(a) * size * 0.9;
+        ctx.beginPath();
+        ctx.ellipse(tx, ty, size * 0.28, size * 0.35, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  },
+  {
+    id: 'rainbow',
+    label: 'Gökkuşağı',
+    emoji: '🌈',
+    draw: (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size: number) => {
+      ctx.save();
+      const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
+      let r = size * 1.6;
+      ctx.lineWidth = size * 0.28;
+      for (const c of colors) {
+        ctx.strokeStyle = c;
+        ctx.beginPath();
+        ctx.arc(x, y + size * 0.8, r, Math.PI, 0);
+        ctx.stroke();
+        r -= size * 0.28;
+      }
+      ctx.restore();
+    }
+  },
 ];
 
-// Fun inspiration prompts
+// Easy 4-year-old child inspiration prompts
 const INSPIRATION_IDEAS = [
-  "Gökkuşağının üzerinden kayan neşeli yavru kedi",
-  "Bahçesinde renkli laleler olan sevimli masal evi",
-  "Uzayda yıldız toplayan güler yüzlü astronot kız",
-  "Deniz altında dans eden yunuslar ve denizkızı",
-  "Gökyüzünde uçan rengarenk dev balonlar",
-  "Ormanda piknik yapan sevimli ayıcık ve sincap"
+  { label: '🐱 Sevimli Kedicik', text: 'Gökkuşağının altında gülümseyen sevimli yavru kedi' },
+  { label: '🏠 Çiçekli Masal Evi', text: 'Bahçesinde renkli çiçekler olan sevimli masal evi ve güneş' },
+  { label: '🚀 Yıldızlara Uçan Roket', text: 'Uzayda yıldızların ve gezegenlerin arasında uçan renkli roket' },
+  { label: '🦋 Renkli Kelebek', text: 'Çiçek tarlasında neşeyle dans eden kocaman kelebek' },
+  { label: '🦕 Minik Dinozor', text: 'Yeşil ormanda arkadaşlarıyla oynayan sevimli bebek dinozor' },
+  { label: '🐬 Neşeli Yunus', text: 'Masmavi denizde dalgaların üstünde zıplayan mutlu yunus balığı' },
 ];
 
-// Sample pre-rendered transformations so child & parents can immediately see the magic
+// Initial demo transformations
 const INITIAL_DEMO_CREATIONS: SavedCreation[] = [
   {
     id: 'demo-1',
@@ -141,12 +254,12 @@ const INITIAL_DEMO_CREATIONS: SavedCreation[] = [
     style: 'storybook',
     childDrawing: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80',
     realIllustration: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=600&auto=format&fit=crop&q=80',
-    story: 'Kedicik Minnoş gökyüzünün en tatlı pamuk bulutuna tırmandı ve gökkuşağının renkleriyle pati izleri bıraktı!',
-    praise: 'Renk seçimlerin harika, gökkuşağının parlaklığı odayı aydınlatıyor!'
+    story: 'Bu sevimli kedicik gökyüzündeki gökkuşağını kaydırak yaptı! Renkli bulutların arasında Nisan için neşeyle mırıldanıyor.',
+    praise: 'Renk seçimlerin ve fırça hareketlerin harika! Çok yetenekli bir küçük ressamsın.'
   },
   {
     id: 'demo-2',
-    title: 'Yıldızlar Arasındaki Sihirli Ev',
+    title: 'Güneşli Masal Evi',
     date: 'Dün',
     style: 'pixar_3d',
     childDrawing: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80',
@@ -156,6 +269,97 @@ const INITIAL_DEMO_CREATIONS: SavedCreation[] = [
   }
 ];
 
+// Fast flood fill for coloring templates (doesn't cross black outlines)
+function floodFillCanvas(
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  fillColorHex: string,
+  width: number,
+  height: number
+) {
+  const r = parseInt(fillColorHex.slice(1, 3), 16);
+  const g = parseInt(fillColorHex.slice(3, 5), 16);
+  const b = parseInt(fillColorHex.slice(5, 7), 16);
+  const a = 255;
+
+  const imgData = ctx.getImageData(0, 0, width, height);
+  const data = imgData.data;
+
+  const startPos = (startY * width + startX) * 4;
+  const startR = data[startPos];
+  const startG = data[startPos + 1];
+  const startB = data[startPos + 2];
+  const startA = data[startPos + 3];
+
+  // If already same color, return
+  if (
+    Math.abs(startR - r) < 15 &&
+    Math.abs(startG - g) < 15 &&
+    Math.abs(startB - b) < 15 &&
+    Math.abs(startA - a) < 15
+  ) {
+    return;
+  }
+
+  // Check if target pixel matches start color and is NOT a dark outline
+  const colorMatch = (pos: number) => {
+    const pr = data[pos];
+    const pg = data[pos + 1];
+    const pb = data[pos + 2];
+    const pa = data[pos + 3];
+
+    // Don't cross dark outline lines
+    const isDarkOutline = pr < 70 && pg < 70 && pb < 70 && pa > 180;
+    if (isDarkOutline && (startR >= 70 || startG >= 70 || startB >= 70)) {
+      return false;
+    }
+
+    const diff = Math.abs(pr - startR) + Math.abs(pg - startG) + Math.abs(pb - startB) + Math.abs(pa - startA);
+    return diff < 85;
+  };
+
+  const queue: [number, number][] = [[startX, startY]];
+  const visited = new Uint8Array(width * height);
+  visited[startY * width + startX] = 1;
+
+  let iterations = 0;
+  const maxIterations = width * height;
+
+  while (queue.length > 0 && iterations < maxIterations) {
+    iterations++;
+    const [cx, cy] = queue.pop()!;
+    const pos = (cy * width + cx) * 4;
+
+    data[pos] = r;
+    data[pos + 1] = g;
+    data[pos + 2] = b;
+    data[pos + 3] = a;
+
+    const neighbors = [
+      [cx + 1, cy],
+      [cx - 1, cy],
+      [cx, cy + 1],
+      [cx, cy - 1],
+    ];
+
+    for (const [nx, ny] of neighbors) {
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+        const nIndex = ny * width + nx;
+        if (!visited[nIndex]) {
+          visited[nIndex] = 1;
+          const nPos = nIndex * 4;
+          if (colorMatch(nPos)) {
+            queue.push([nx, ny]);
+          }
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
 export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   config,
   onNavigate,
@@ -164,10 +368,12 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('#E11D48');
   const [currentTool, setCurrentTool] = useState<ToolType>('brush');
-  const [brushSize, setBrushSize] = useState<number>(12);
+  const [brushSize, setBrushSize] = useState<number>(22); // Default medium for 4-year-olds
   const [selectedStamp, setSelectedStamp] = useState<string>('star');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const rainbowHue = useRef<number>(0);
 
-  // History stack for Undo / Redo
+  // Undo / Redo history
   const [history, setHistory] = useState<string[]>([]);
   const [historyStep, setHistoryStep] = useState<number>(-1);
 
@@ -181,30 +387,36 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   const [style, setStyle] = useState<ArtStyle>('storybook');
   const [isTransforming, setIsTransforming] = useState<boolean>(false);
   const [transformProgress, setTransformProgress] = useState<string>('');
+  const [isSpeakingStory, setIsSpeakingStory] = useState<boolean>(false);
+
   const [transformResult, setTransformResult] = useState<{
     original: string;
     transformed: string;
     title: string;
     story?: string;
     praise?: string;
-    needsPaidKey?: boolean;
-    error?: string;
   } | null>(null);
 
-  // Interactive slider position (0-100%)
+  // Comparison view mode: 'slider' or 'side-by-side' or 'certificate'
+  const [viewMode, setViewMode] = useState<'slider' | 'side-by-side' | 'certificate'>('slider');
   const [sliderPos, setSliderPos] = useState<number>(50);
   const [isDraggingSlider, setIsDraggingSlider] = useState<boolean>(false);
 
-  // Local saved creations gallery
+  // Saved creations
   const [savedCreations, setSavedCreations] = useState<SavedCreation[]>(() => {
     const saved = localStorage.getItem('nisan_saved_drawings');
     return saved ? JSON.parse(saved) : INITIAL_DEMO_CREATIONS;
   });
 
-  // Save creations to localStorage
   useEffect(() => {
     localStorage.setItem('nisan_saved_drawings', JSON.stringify(savedCreations));
   }, [savedCreations]);
+
+  // Sync soundFx config
+  useEffect(() => {
+    soundFx.soundEnabled = soundEnabled;
+    soundFx.voiceEnabled = soundEnabled;
+  }, [soundEnabled]);
 
   // Initialize canvas
   useEffect(() => {
@@ -214,23 +426,19 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set high-DPI canvas dimensions
     const width = 800;
     const height = 600;
     canvas.width = width;
     canvas.height = height;
 
-    // Fill white background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
 
-    // Initial history push
     const initialData = canvas.toDataURL('image/png');
     setHistory([initialData]);
     setHistoryStep(0);
   }, []);
 
-  // Save state to undo history
   const pushHistory = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -258,6 +466,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       setHistoryStep(newStep);
     };
     img.src = history[newStep];
+    if (soundEnabled) soundFx.playGentleBeep(320);
   };
 
   // Redo
@@ -276,9 +485,10 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       setHistoryStep(newStep);
     };
     img.src = history[newStep];
+    if (soundEnabled) soundFx.playGentleBeep(480);
   };
 
-  // Clear canvas
+  // Clear
   const handleClear = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -288,163 +498,374 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     pushHistory();
+    if (soundEnabled) soundFx.playPop();
   };
 
-  // Load template onto canvas
-  const handleLoadTemplate = (templateType: 'kitten' | 'house' | 'space' | 'rainbow') => {
+  // 6 Cartoon outlines designed for 4-year-olds
+  const handleLoadTemplate = (templateType: 'kitten' | 'house' | 'space' | 'butterfly' | 'dino' | 'dolphin') => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Reset white
+    // Clear white
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.strokeStyle = '#292524';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 5; // Bold lines for easy coloring
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     if (templateType === 'kitten') {
-      // Draw cute kitten outline
-      ctx.beginPath();
       // Head
-      ctx.arc(400, 300, 110, 0, Math.PI * 2);
+      ctx.beginPath();
+      ctx.arc(400, 270, 120, 0, Math.PI * 2);
       ctx.stroke();
+
       // Ears
       ctx.beginPath();
-      ctx.moveTo(320, 220);
-      ctx.lineTo(310, 140);
-      ctx.lineTo(380, 200);
+      ctx.moveTo(310, 180);
+      ctx.lineTo(290, 80);
+      ctx.lineTo(380, 150);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(480, 220);
-      ctx.lineTo(490, 140);
-      ctx.lineTo(420, 200);
+      ctx.moveTo(490, 180);
+      ctx.lineTo(510, 80);
+      ctx.lineTo(420, 150);
       ctx.stroke();
 
-      // Eyes
+      // Inner ears
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(360, 280, 16, 0, Math.PI * 2);
-      ctx.arc(440, 280, 16, 0, Math.PI * 2);
+      ctx.moveTo(315, 160); ctx.lineTo(305, 105); ctx.lineTo(365, 145); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(485, 160); ctx.lineTo(495, 105); ctx.lineTo(435, 145); ctx.stroke();
+      ctx.lineWidth = 5;
+
+      // Big cute eyes
+      ctx.beginPath();
+      ctx.arc(350, 250, 20, 0, Math.PI * 2);
+      ctx.arc(450, 250, 20, 0, Math.PI * 2);
       ctx.fillStyle = '#1C1917';
       ctx.fill();
 
-      // Nose & Mouth
+      // Eye shines
+      ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
-      ctx.moveTo(390, 320);
-      ctx.lineTo(410, 320);
-      ctx.lineTo(400, 335);
-      ctx.closePath();
+      ctx.arc(345, 245, 7, 0, Math.PI * 2);
+      ctx.arc(445, 245, 7, 0, Math.PI * 2);
       ctx.fill();
 
+      // Nose & Smile
+      ctx.fillStyle = '#F43F5E';
       ctx.beginPath();
-      ctx.arc(385, 345, 15, 0, Math.PI);
+      ctx.moveTo(390, 290);
+      ctx.lineTo(410, 290);
+      ctx.lineTo(400, 305);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(385, 315, 16, 0, Math.PI);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(415, 345, 15, 0, Math.PI);
+      ctx.arc(415, 315, 16, 0, Math.PI);
       ctx.stroke();
 
       // Whiskers
       ctx.beginPath();
-      ctx.moveTo(340, 320); ctx.lineTo(260, 310);
-      ctx.moveTo(340, 335); ctx.lineTo(260, 340);
-      ctx.moveTo(460, 320); ctx.lineTo(540, 310);
-      ctx.moveTo(460, 335); ctx.lineTo(540, 340);
+      ctx.moveTo(270, 280); ctx.lineTo(210, 270);
+      ctx.moveTo(270, 300); ctx.lineTo(210, 310);
+      ctx.moveTo(530, 280); ctx.lineTo(590, 270);
+      ctx.moveTo(530, 300); ctx.lineTo(590, 310);
       ctx.stroke();
 
-      // Bow
-      ctx.fillStyle = '#F43F5E';
+      // Cute Body & Paws
       ctx.beginPath();
-      ctx.arc(400, 420, 12, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (templateType === 'house') {
-      // Fairy tale cottage
-      ctx.beginPath();
-      // Walls
-      ctx.rect(300, 280, 200, 180);
+      ctx.arc(400, 480, 110, Math.PI * 0.8, Math.PI * 2.2);
       ctx.stroke();
+
+      // Bow tie
+      ctx.fillStyle = '#EA580C';
+      ctx.beginPath();
+      ctx.moveTo(400, 385);
+      ctx.lineTo(360, 370);
+      ctx.lineTo(360, 410);
+      ctx.closePath();
+      ctx.moveTo(400, 385);
+      ctx.lineTo(440, 370);
+      ctx.lineTo(440, 410);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      setPrompt('Gülümseyen papyonlu sevimli yavru kedi');
+    } else if (templateType === 'house') {
+      // Ground
+      ctx.beginPath();
+      ctx.moveTo(60, 520);
+      ctx.lineTo(740, 520);
+      ctx.stroke();
+
+      // Main House
+      ctx.beginPath();
+      ctx.rect(260, 280, 280, 240);
+      ctx.stroke();
+
       // Roof
       ctx.beginPath();
-      ctx.moveTo(270, 280);
-      ctx.lineTo(400, 160);
-      ctx.lineTo(530, 280);
+      ctx.moveTo(230, 280);
+      ctx.lineTo(400, 140);
+      ctx.lineTo(570, 280);
       ctx.closePath();
       ctx.stroke();
+
+      // Chimney & Heart Smoke
+      ctx.beginPath();
+      ctx.rect(480, 170, 40, 70);
+      ctx.stroke();
+      // Heart smoke
+      ctx.beginPath();
+      ctx.arc(500, 110, 18, 0, Math.PI * 2);
+      ctx.stroke();
+
       // Door
       ctx.beginPath();
-      ctx.rect(370, 360, 60, 100);
+      ctx.arc(400, 430, 35, Math.PI, 0);
+      ctx.lineTo(435, 520);
+      ctx.lineTo(365, 520);
+      ctx.closePath();
       ctx.stroke();
+      // Door knob
+      ctx.beginPath();
+      ctx.arc(420, 470, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#1C1917';
+      ctx.fill();
+
       // Windows
       ctx.beginPath();
-      ctx.rect(320, 310, 40, 40);
-      ctx.rect(440, 310, 40, 40);
+      ctx.rect(290, 320, 55, 55);
+      ctx.moveTo(317, 320); ctx.lineTo(317, 375);
+      ctx.moveTo(290, 347); ctx.lineTo(345, 347);
+      ctx.rect(455, 320, 55, 55);
+      ctx.moveTo(482, 320); ctx.lineTo(482, 375);
+      ctx.moveTo(455, 347); ctx.lineTo(510, 347);
       ctx.stroke();
-      // Sun in corner
+
+      // Smiling Sun
       ctx.beginPath();
-      ctx.arc(140, 120, 45, 0, Math.PI * 2);
+      ctx.arc(130, 120, 45, 0, Math.PI * 2);
       ctx.stroke();
-      // Trees
-      ctx.beginPath();
-      ctx.rect(170, 380, 20, 80);
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4;
+        ctx.moveTo(130 + Math.cos(a) * 55, 120 + Math.sin(a) * 55);
+        ctx.lineTo(130 + Math.cos(a) * 75, 120 + Math.sin(a) * 75);
+      }
       ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(180, 350, 45, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (templateType === 'space') {
-      // Rocket
-      ctx.beginPath();
-      ctx.moveTo(400, 140);
-      ctx.quadraticCurveTo(460, 250, 450, 380);
-      ctx.lineTo(350, 380);
-      ctx.quadraticCurveTo(340, 250, 400, 140);
-      ctx.stroke();
-      // Window
-      ctx.beginPath();
-      ctx.arc(400, 260, 30, 0, Math.PI * 2);
-      ctx.stroke();
-      // Wings
-      ctx.beginPath();
-      ctx.moveTo(350, 350); ctx.lineTo(300, 400); ctx.lineTo(350, 400); ctx.closePath();
-      ctx.moveTo(450, 350); ctx.lineTo(500, 400); ctx.lineTo(450, 400); ctx.closePath();
-      ctx.stroke();
-      // Planet
-      ctx.beginPath();
-      ctx.arc(620, 180, 60, 0, Math.PI * 2);
-      ctx.stroke();
-      // Ring
-      ctx.beginPath();
-      ctx.ellipse(620, 180, 85, 20, Math.PI / 6, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (templateType === 'rainbow') {
-      // Rainbow & clouds
-      const cx = 400;
-      const cy = 480;
-      for (let r = 280; r >= 160; r -= 24) {
+
+      // Flowers in garden
+      for (const fx of [140, 200, 600, 660]) {
         ctx.beginPath();
-        ctx.arc(cx, cy, r, Math.PI, 0);
+        ctx.moveTo(fx, 520); ctx.lineTo(fx, 460);
+        ctx.arc(fx, 450, 15, 0, Math.PI * 2);
         ctx.stroke();
       }
-      // Left cloud
+
+      setPrompt('Bahçesinde rengarenk çiçekler olan masal evi ve güneş');
+    } else if (templateType === 'space') {
+      // Rocket Body
       ctx.beginPath();
-      ctx.arc(160, 460, 40, 0, Math.PI * 2);
-      ctx.arc(200, 440, 50, 0, Math.PI * 2);
-      ctx.arc(240, 460, 40, 0, Math.PI * 2);
+      ctx.moveTo(400, 120);
+      ctx.quadraticCurveTo(480, 240, 470, 410);
+      ctx.lineTo(330, 410);
+      ctx.quadraticCurveTo(320, 240, 400, 120);
       ctx.stroke();
-      // Right cloud
+
+      // Rocket tip
       ctx.beginPath();
-      ctx.arc(560, 460, 40, 0, Math.PI * 2);
-      ctx.arc(600, 440, 50, 0, Math.PI * 2);
-      ctx.arc(640, 460, 40, 0, Math.PI * 2);
+      ctx.moveTo(360, 200); ctx.lineTo(440, 200); ctx.stroke();
+
+      // Big Window with cute smile
+      ctx.beginPath();
+      ctx.arc(400, 280, 38, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(400, 280, 28, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Wings
+      ctx.beginPath();
+      ctx.moveTo(330, 360); ctx.lineTo(260, 440); ctx.lineTo(330, 440); ctx.closePath();
+      ctx.moveTo(470, 360); ctx.lineTo(540, 440); ctx.lineTo(470, 440); ctx.closePath();
+      ctx.stroke();
+
+      // Flames
+      ctx.beginPath();
+      ctx.moveTo(360, 410); ctx.lineTo(375, 490); ctx.lineTo(400, 440); ctx.lineTo(425, 490); ctx.lineTo(440, 410);
+      ctx.stroke();
+
+      // Saturn Planet
+      ctx.beginPath();
+      ctx.arc(630, 190, 50, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(630, 190, 80, 18, Math.PI / 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Stars
+      for (const [sx, sy] of [[150, 160], [210, 320], [620, 420], [180, 480], [600, 90]]) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#F59E0B';
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      setPrompt('Uzayda yıldızların ve gezegenlerin arasında uçan renkli roket');
+    } else if (templateType === 'butterfly') {
+      // Big Butterfly Body
+      ctx.beginPath();
+      ctx.ellipse(400, 300, 18, 90, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1C1917';
+      ctx.fill();
+      ctx.stroke();
+
+      // Head & Antennae
+      ctx.beginPath();
+      ctx.arc(400, 190, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(395, 175); ctx.quadraticCurveTo(360, 120, 340, 140);
+      ctx.moveTo(405, 175); ctx.quadraticCurveTo(440, 120, 460, 140);
+      ctx.stroke();
+
+      // Wings (Left)
+      ctx.beginPath();
+      ctx.ellipse(260, 240, 110, 75, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.ellipse(280, 380, 85, 55, Math.PI / 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Wings (Right)
+      ctx.beginPath();
+      ctx.ellipse(540, 240, 110, 75, Math.PI / 6, 0, Math.PI * 2);
+      ctx.ellipse(520, 380, 85, 55, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Wing decoration circles
+      ctx.beginPath();
+      ctx.arc(260, 240, 30, 0, Math.PI * 2);
+      ctx.arc(540, 240, 30, 0, Math.PI * 2);
+      ctx.arc(280, 380, 22, 0, Math.PI * 2);
+      ctx.arc(520, 380, 22, 0, Math.PI * 2);
+      ctx.stroke();
+
+      setPrompt('Kocaman renkli kanatları olan neşeli kelebek');
+    } else if (templateType === 'dino') {
+      // Cute Baby Dino Body
+      ctx.beginPath();
+      ctx.ellipse(400, 360, 120, 90, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Neck & Head
+      ctx.beginPath();
+      ctx.moveTo(310, 330);
+      ctx.quadraticCurveTo(280, 200, 320, 150);
+      ctx.quadraticCurveTo(380, 120, 400, 180);
+      ctx.lineTo(360, 280);
+      ctx.stroke();
+
+      // Big Eye
+      ctx.beginPath();
+      ctx.arc(350, 160, 15, 0, Math.PI * 2);
+      ctx.fillStyle = '#1C1917';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(346, 156, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+
+      // Smiling mouth
+      ctx.beginPath();
+      ctx.arc(360, 190, 18, 0, Math.PI * 0.6);
+      ctx.stroke();
+
+      // Legs
+      ctx.beginPath();
+      ctx.rect(340, 440, 35, 60);
+      ctx.rect(420, 440, 35, 60);
+      ctx.stroke();
+
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(510, 330);
+      ctx.quadraticCurveTo(650, 350, 620, 260);
+      ctx.quadraticCurveTo(570, 370, 500, 400);
+      ctx.stroke();
+
+      // Back plates / spots
+      for (const [dx, dy] of [[380, 265], [430, 265], [480, 280], [530, 310]]) {
+        ctx.beginPath();
+        ctx.arc(dx, dy, 15, Math.PI, 0);
+        ctx.stroke();
+      }
+
+      setPrompt('Arkadaş canlısı gülümseyen sevimli yavru dinozor');
+    } else if (templateType === 'dolphin') {
+      // Ocean Waves
+      ctx.beginPath();
+      for (let x = 40; x <= 760; x += 120) {
+        ctx.arc(x + 60, 490, 60, 0, Math.PI);
+      }
+      ctx.stroke();
+
+      // Dolphin Curved Body
+      ctx.beginPath();
+      ctx.moveTo(250, 380);
+      ctx.quadraticCurveTo(350, 170, 520, 240);
+      ctx.quadraticCurveTo(620, 300, 630, 320);
+      ctx.lineTo(600, 330);
+      ctx.quadraticCurveTo(520, 280, 420, 330);
+      ctx.quadraticCurveTo(340, 380, 250, 380);
+      ctx.stroke();
+
+      // Snout
+      ctx.beginPath();
+      ctx.moveTo(250, 380); ctx.lineTo(210, 395); ctx.lineTo(240, 410);
+      ctx.stroke();
+
+      // Smiling Eye
+      ctx.beginPath();
+      ctx.arc(280, 360, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#1C1917';
+      ctx.fill();
+
+      // Fins
+      ctx.beginPath();
+      ctx.moveTo(420, 205); ctx.quadraticCurveTo(440, 140, 470, 185); ctx.lineTo(450, 215);
+      ctx.stroke();
+
+      // Flipper
+      ctx.beginPath();
+      ctx.moveTo(350, 350); ctx.lineTo(330, 420); ctx.lineTo(370, 390); ctx.closePath();
+      ctx.stroke();
+
+      // Fluke / Tail Fin
+      ctx.beginPath();
+      ctx.moveTo(630, 320); ctx.lineTo(670, 280); ctx.lineTo(655, 330); ctx.lineTo(680, 360); ctx.closePath();
+      ctx.stroke();
+
+      setPrompt('Dalgaların üzerinde zıplayan mutlu yunus balığı');
     }
 
     pushHistory();
+    if (soundEnabled) soundFx.playSuccess();
   };
 
-  // Get pointer coordinates relative to canvas internal coordinate system
+  // Convert client coordinates to canvas internal pixel coordinates
   const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -452,40 +873,9 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: Math.floor((e.clientX - rect.left) * scaleX),
+      y: Math.floor((e.clientY - rect.top) * scaleY),
     };
-  };
-
-  // Start Drawing
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.setPointerCapture(e.pointerId);
-    isDrawing.current = true;
-    const { x, y } = getCanvasCoords(e);
-    lastX.current = x;
-    lastY.current = y;
-
-    if (currentTool === 'stamp') {
-      const stampDef = STAMPS.find(s => s.id === selectedStamp);
-      if (stampDef) {
-        stampDef.draw(ctx, x, y, currentColor, brushSize * 1.5);
-        pushHistory();
-      }
-      isDrawing.current = false;
-      return;
-    }
-
-    // Set brush settings
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y);
-    applyToolStyle(ctx);
-    ctx.stroke();
   };
 
   const applyToolStyle = (ctx: CanvasRenderingContext2D) => {
@@ -494,20 +884,21 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
     if (currentTool === 'eraser') {
       ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = brushSize * 1.8;
+      ctx.lineWidth = brushSize * 1.6;
       ctx.globalAlpha = 1.0;
-    } else if (currentTool === 'pencil') {
+    } else if (currentTool === 'rainbow') {
+      rainbowHue.current = (rainbowHue.current + 8) % 360;
+      ctx.strokeStyle = `hsl(${rainbowHue.current}, 100%, 50%)`;
+      ctx.lineWidth = brushSize;
+      ctx.globalAlpha = 1.0;
+    } else if (currentTool === 'crayon') {
       ctx.strokeStyle = currentColor;
-      ctx.lineWidth = Math.max(2, brushSize * 0.4);
-      ctx.globalAlpha = 0.9;
-    } else if (currentTool === 'marker') {
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = brushSize * 1.4;
-      ctx.globalAlpha = 0.65;
+      ctx.lineWidth = brushSize * 1.3;
+      ctx.globalAlpha = 0.8;
     } else if (currentTool === 'glitter') {
       ctx.strokeStyle = currentColor;
       ctx.lineWidth = brushSize;
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = 0.9;
     } else {
       // standard brush
       ctx.strokeStyle = currentColor;
@@ -516,7 +907,44 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     }
   };
 
-  // Move Drawing
+  // Pointer Down
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.setPointerCapture(e.pointerId);
+    const { x, y } = getCanvasCoords(e);
+    lastX.current = x;
+    lastY.current = y;
+
+    // Bucket fill tool
+    if (currentTool === 'bucket') {
+      floodFillCanvas(ctx, x, y, currentColor, canvas.width, canvas.height);
+      pushHistory();
+      if (soundEnabled) soundFx.playBubble();
+      return;
+    }
+
+    // Stamp tool
+    if (currentTool === 'stamp') {
+      const stampDef = STAMPS.find(s => s.id === selectedStamp);
+      if (stampDef) {
+        stampDef.draw(ctx, x, y, currentColor, brushSize * 1.5);
+        pushHistory();
+        if (soundEnabled) soundFx.playPop();
+      }
+      return;
+    }
+
+    isDrawing.current = true;
+    if (soundEnabled && currentTool === 'rainbow') {
+      soundFx.playGentleBeep(520);
+    }
+  };
+
+  // Pointer Move
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing.current) return;
     const canvas = canvasRef.current;
@@ -527,22 +955,20 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     const { x, y } = getCanvasCoords(e);
 
     if (currentTool === 'glitter') {
-      // Sparkle dots along the path
       ctx.beginPath();
       ctx.moveTo(lastX.current, lastY.current);
       ctx.lineTo(x, y);
       applyToolStyle(ctx);
       ctx.stroke();
 
-      // Scatter tiny stars/dots
+      // Scatter sparkle stars
       for (let i = 0; i < 2; i++) {
-        const offsetDist = (Math.random() - 0.5) * brushSize * 1.5;
-        const starX = x + offsetDist;
-        const starY = y + (Math.random() - 0.5) * brushSize * 1.5;
+        const offsetDistX = (Math.random() - 0.5) * brushSize * 1.6;
+        const offsetDistY = (Math.random() - 0.5) * brushSize * 1.6;
         ctx.save();
         ctx.fillStyle = '#FDE047';
         ctx.beginPath();
-        ctx.arc(starX, starY, Math.random() * 2 + 1, 0, Math.PI * 2);
+        ctx.arc(x + offsetDistX, y + offsetDistY, Math.random() * 3 + 1.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -558,7 +984,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     lastY.current = y;
   };
 
-  // End Drawing
+  // Pointer Up
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
@@ -567,7 +993,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       try {
         canvas.releasePointerCapture(e.pointerId);
       } catch {
-        // Safe ignore
+        // ignore
       }
     }
     pushHistory();
@@ -583,24 +1009,24 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     link.click();
   };
 
-  // Transform drawing into real illustration via AI
+  // AI Transform drawing into real illustration
   const handleTransform = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     setIsTransforming(true);
-    setTransformProgress('Çiziminiz taranıyor ve renkler analiz ediliyor...');
+    setTransformProgress('🎨 Çiziminiz taranıyor ve renkler inceleniyor...');
 
     try {
       const imageBase64 = canvas.toDataURL('image/png');
 
       const timer1 = setTimeout(() => {
-        setTransformProgress('Hayal gücünüz okunuyor ve masal detayları oluşturuluyor...');
-      }, 1500);
+        setTransformProgress('✨ Hayal gücü çözümleniyor, masal hazırlanıyor...');
+      }, 1200);
 
       const timer2 = setTimeout(() => {
-        setTransformProgress('Büyülü fırçalar çalışıyor, illüstrasyon hazırlanıyor...');
-      }, 3500);
+        setTransformProgress('🌟 Büyülü fırçalar çalışıyor, gerçek resim canlanıyor...');
+      }, 2600);
 
       const res = await fetch('/api/transform-drawing', {
         method: 'POST',
@@ -639,8 +1065,12 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         });
 
         setSavedCreations(prev => [newCreation, ...prev]);
+
+        if (soundEnabled) {
+          soundFx.playMagicTada();
+        }
       } else {
-        // Fallback to matched fairytale artwork
+        // Graceful fallback
         const fallbackImg = INITIAL_DEMO_CREATIONS[0].realIllustration;
         setTransformResult({
           original: imageBase64,
@@ -649,6 +1079,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
           story: data?.analysis?.story || `${config.daughterName}'ın neşeli fırça darbeleriyle renklenen bu resim, hayallerin güzelliğini ve sevgi dolu dünyasını anlatıyor.`,
           praise: data?.analysis?.praiseMessage || 'Çok canlı ve neşeli bir çizim yaptın!',
         });
+        if (soundEnabled) soundFx.playMagicTada();
       }
     } catch (err: any) {
       console.warn('Transform fallback triggered:', err);
@@ -660,10 +1091,29 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         story: `${config.daughterName}'ın çizimi masalsı bir dünyaya kapı araladı. Renkler ve çizgiler neşe dolu bir hikaye anlatıyor!`,
         praise: 'Harika bir çizim! Hayal gücün parıldıyor.',
       });
+      if (soundEnabled) soundFx.playMagicTada();
     } finally {
       setIsTransforming(false);
       setTransformProgress('');
     }
+  };
+
+  // Speak fairy tale story out loud
+  const handleReadStory = () => {
+    if (!transformResult?.story) return;
+    if (isSpeakingStory) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsSpeakingStory(false);
+      return;
+    }
+    setIsSpeakingStory(true);
+    soundFx.speakTurkish(transformResult.story);
+    // Reset state after approximate time
+    setTimeout(() => {
+      setIsSpeakingStory(false);
+    }, (transformResult.story.length / 10) * 1000 + 2000);
   };
 
   // Slider drag events for before/after comparison
@@ -674,41 +1124,64 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] text-stone-800 flex flex-col pb-20">
+    <div className="min-h-screen bg-[#FDFCFB] text-stone-800 flex flex-col pb-24">
       
       {/* Top Banner / Hero Header */}
-      <section className="bg-linear-to-b from-rose-50/60 via-amber-50/30 to-transparent border-b border-stone-200/80 pt-8 pb-10">
+      <section className="bg-gradient-to-b from-rose-50/80 via-amber-50/40 to-transparent border-b border-stone-200/80 pt-6 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 border border-rose-200 text-rose-900 text-xs font-semibold">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 border border-rose-200 text-rose-900 text-xs font-bold shadow-2xs">
                 <Palette className="w-3.5 h-3.5 text-rose-600" />
-                <span>Sihirli Çizim & Hayal Atölyesi</span>
+                <span>4+ Yaş Çocuk Sanat & Boyama Atölyesi</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-display font-bold text-stone-900 tracking-tight flex items-center gap-3">
-                <span>{config.daughterName}'ın Boyama & Hayal Odası</span>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-stone-900 tracking-tight flex items-center gap-2">
+                <span>{config.daughterName}'ın Sihirli Boyama Dünyası</span>
                 <span className="text-2xl">✨</span>
               </h1>
-              <p className="text-stone-600 text-sm sm:text-base max-w-2xl font-serif italic">
-                "Çocuğunuz dilediği gibi çizsin ve boyasın. Ardından yapay zeka büyüsüyle o sevimli çizgi ve lekelerin arkasındaki gerçek hayali, nefes kesici bir illüstrasyona dönüştürelim!"
+              <p className="text-stone-600 text-xs sm:text-sm max-w-2xl">
+                İster şablonları boya, ister dilediğin gibi çiz! Ardından <strong>"Sihirli Dönüştür"</strong> butonuna bas ve yapay zeka çizdiğini gerçek bir masal resmine dönüştürsün.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Sound toggle & quick navigation */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs ${
+                  soundEnabled 
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                    : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
+                }`}
+                title="Ses Açık / Kapalı"
+              >
+                {soundEnabled ? (
+                  <>
+                    <Volume2 className="w-4 h-4 text-emerald-600" />
+                    <span>Ses Açık 🔊</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-4 h-4 text-stone-400" />
+                    <span>Ses Kapalı 🔇</span>
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={() => onNavigate('/oyun')}
-                className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shadow-2xs"
+                className="px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
               >
                 <Smile className="w-4 h-4 text-amber-500" />
-                <span>Eğitici Oyunlar</span>
+                <span className="hidden sm:inline">Oyun Odası</span>
               </button>
+
               <button
-                onClick={() => onNavigate('/anilar')}
-                className="px-4 py-2 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shadow-2xs"
+                onClick={() => onNavigate('/')}
+                className="px-3.5 py-2 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
               >
-                <span>Anı Arşivi</span>
-                <ChevronRight className="w-4 h-4" />
+                <span>Ana Sayfa</span>
               </button>
             </div>
 
@@ -717,226 +1190,308 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       </section>
 
       {/* Main Studio Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 w-full space-y-6">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* TOP: 6 Ready-to-Color Template Starters (Big visual buttons for 4-year-olds) */}
+        <div className="bg-white rounded-3xl border-2 border-stone-200/90 shadow-sm p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-stone-900 font-bold text-sm sm:text-base">
+              <span className="text-xl">🎨</span>
+              <span>1-Tıkla Boyama Şablonları</span>
+              <span className="text-xs font-normal text-stone-500 hidden sm:inline">(Dokun ve hemen boyamaya başla!)</span>
+            </div>
+            <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+              Kolay Çizimler
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+            {[
+              { id: 'kitten', emoji: '🐱', title: 'Şirin Kedicik', desc: 'Gülümseyen kedi' },
+              { id: 'house', emoji: '🏠', title: 'Masal Evi', desc: 'Bahçe & güneş' },
+              { id: 'space', emoji: '🚀', title: 'Uzay Roketi', desc: 'Gezegen & yıldız' },
+              { id: 'butterfly', emoji: '🦋', title: 'Kelebek', desc: 'Renkli kanatlar' },
+              { id: 'dino', emoji: '🦕', title: 'Yavru Dinozor', desc: 'Dost canlısı dino' },
+              { id: 'dolphin', emoji: '🐬', title: 'Neşeli Yunus', desc: 'Deniz dalgaları' },
+            ].map(tpl => (
+              <button
+                key={tpl.id}
+                onClick={() => handleLoadTemplate(tpl.id as any)}
+                className="group p-3 rounded-2xl border-2 border-stone-200 hover:border-rose-400 bg-stone-50 hover:bg-rose-50/70 transition-all text-center flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-2xs hover:shadow-xs"
+              >
+                <span className="text-3xl group-hover:scale-125 transition-transform duration-200">
+                  {tpl.emoji}
+                </span>
+                <span className="font-bold text-xs text-stone-800 group-hover:text-rose-900">
+                  {tpl.title}
+                </span>
+                <span className="text-[10px] text-stone-400 group-hover:text-rose-700">
+                  {tpl.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* WORKSPACE: Left (Canvas & Tools), Right (AI Magical Transformer) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Left Column: Canvas & Paint Tools (8 Cols) */}
+          {/* LEFT: Canvas & Tools (8 Cols) */}
           <div className="lg:col-span-8 space-y-4">
             
-            {/* Canvas Toolbar */}
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-4 flex flex-wrap items-center justify-between gap-4">
+            {/* Top Toolbar: Tools, Sizes, Undo/Redo */}
+            <div className="bg-white rounded-3xl border-2 border-stone-200 p-4 space-y-4 shadow-sm">
               
-              {/* Tool Selection */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  onClick={() => setCurrentTool('brush')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'brush' ? 'bg-rose-500 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="Fırça"
-                >
-                  <Palette className="w-3.5 h-3.5" />
-                  <span>Fırça</span>
-                </button>
+              {/* Row 1: Big Friendly Tools for 4-year-olds */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  
+                  {/* Fırça */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('brush');
+                      if (soundEnabled) soundFx.playPop();
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'brush'
+                        ? 'bg-rose-500 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <Paintbrush className="w-4 h-4" />
+                    <span>Fırça</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentTool('pencil')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'pencil' ? 'bg-rose-500 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="İnce Kalem"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>Kalem</span>
-                </button>
+                  {/* Sihirli Kova (Dokun-Boya) */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('bucket');
+                      if (soundEnabled) soundFx.playBubble();
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'bucket'
+                        ? 'bg-blue-600 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                    title="Dokunarak tüm alanı boya"
+                  >
+                    <PaintBucket className="w-4 h-4" />
+                    <span>Sihirli Kova</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentTool('marker')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'marker' ? 'bg-rose-500 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="Pastel Boya"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Pastel</span>
-                </button>
+                  {/* Gökkuşağı Fırçası */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('rainbow');
+                      if (soundEnabled) soundFx.playGentleBeep(600);
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'rainbow'
+                        ? 'bg-gradient-to-r from-red-500 via-amber-500 to-indigo-600 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <span>🌈</span>
+                    <span>Gökkuşağı</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentTool('glitter')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'glitter' ? 'bg-amber-500 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="Sihirli Işıltı Fırçası"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-                  <span>Işıltı</span>
-                </button>
+                  {/* Işıltı & Yıldız Fırçası */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('glitter');
+                      if (soundEnabled) soundFx.playGentleBeep(800);
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'glitter'
+                        ? 'bg-amber-500 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-200" />
+                    <span>Işıltı</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentTool('eraser')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'eraser' ? 'bg-stone-800 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="Silgi"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Silgi</span>
-                </button>
+                  {/* Mum Boya / Crayon */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('crayon');
+                      if (soundEnabled) soundFx.playPop();
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'crayon'
+                        ? 'bg-orange-500 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <span>🖍️</span>
+                    <span>Mum Boya</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentTool('stamp')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    currentTool === 'stamp' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                  title="Damgalar"
-                >
-                  <Star className="w-3.5 h-3.5" />
-                  <span>Damga</span>
-                </button>
+                  {/* Damga / Çıkartma */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('stamp');
+                      if (soundEnabled) soundFx.playPop();
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'stamp'
+                        ? 'bg-purple-600 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <span>⭐</span>
+                    <span>Çıkartma</span>
+                  </button>
+
+                  {/* Silgi */}
+                  <button
+                    onClick={() => {
+                      setCurrentTool('eraser');
+                      if (soundEnabled) soundFx.playPop();
+                    }}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentTool === 'eraser'
+                        ? 'bg-stone-800 text-white shadow-md scale-105'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Silgi</span>
+                  </button>
+
+                </div>
+
+                {/* Right: Undo, Redo, Clear */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleUndo}
+                    disabled={historyStep <= 0}
+                    className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 disabled:hover:bg-stone-100 transition-all cursor-pointer"
+                    title="Geri Al"
+                  >
+                    <Undo className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    disabled={historyStep >= history.length - 1}
+                    className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 disabled:hover:bg-stone-100 transition-all cursor-pointer"
+                    title="İleri Al"
+                  >
+                    <Redo className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition-all cursor-pointer"
+                    title="Tuvali Temizle"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleDownloadDrawing}
+                    className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 transition-all cursor-pointer"
+                    title="Çizimi İndir"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              {/* History Actions & Download */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleUndo}
-                  disabled={historyStep <= 0}
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-40 disabled:hover:bg-stone-100 transition-all"
-                  title="Geri Al"
-                >
-                  <Undo className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={handleRedo}
-                  disabled={historyStep >= history.length - 1}
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-40 disabled:hover:bg-stone-100 transition-all"
-                  title="İleri Al"
-                >
-                  <Redo className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={handleClear}
-                  className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition-all"
-                  title="Tuvali Temizle"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={handleDownloadDrawing}
-                  className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  title="Çizimi İndir"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">İndir</span>
-                </button>
-              </div>
-
-            </div>
-
-            {/* Stamp Bar if Stamp tool is active */}
-            {currentTool === 'stamp' && (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex items-center gap-3 animate-fade-in">
-                <span className="text-xs font-bold text-indigo-900 shrink-0">Damga Seç:</span>
+              {/* Row 2: 3 Big Brush Sizes (4-year-old friendly buttons) */}
+              <div className="flex items-center justify-between gap-4 border-t border-stone-100 pt-3 flex-wrap">
                 <div className="flex items-center gap-2">
-                  {STAMPS.map(stamp => {
-                    const Icon = stamp.icon;
-                    return (
+                  <span className="text-xs font-bold text-stone-600">Fırça Boyu:</span>
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { size: 10, label: '🐣 İnce', iconSize: 10 },
+                      { size: 22, label: '🦊 Normal', iconSize: 18 },
+                      { size: 42, label: '🐘 Kocaman', iconSize: 26 },
+                    ].map(bs => (
                       <button
-                        key={stamp.id}
-                        onClick={() => setSelectedStamp(stamp.id)}
-                        className={`p-2 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                          selectedStamp === stamp.id
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'bg-white text-indigo-800 hover:bg-indigo-100'
+                        key={bs.size}
+                        onClick={() => {
+                          setBrushSize(bs.size);
+                          if (soundEnabled) soundFx.playPop();
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          brushSize === bs.size
+                            ? 'bg-stone-900 text-white shadow-2xs'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                         }`}
                       >
-                        <Icon className="w-4 h-4" />
-                        <span>{stamp.label}</span>
+                        <div
+                          className="rounded-full bg-current"
+                          style={{ width: bs.iconSize * 0.5, height: bs.iconSize * 0.5 }}
+                        />
+                        <span>{bs.label}</span>
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Brush Size Slider & Color Palette */}
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-4 space-y-4">
-              
-              {/* Size Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-stone-600">Kalınlık:</span>
-                  <input
-                    type="range"
-                    min="3"
-                    max="48"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(parseInt(e.target.value, 10))}
-                    className="w-32 accent-rose-500 cursor-pointer"
-                  />
-                  <span className="text-xs font-mono font-semibold text-stone-500 w-8">{brushSize}px</span>
-                </div>
-
-                {/* Live Preview Dot */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-stone-400">Önizleme:</span>
-                  <div
-                    className="rounded-full border border-stone-300 transition-all"
-                    style={{
-                      width: Math.min(36, Math.max(8, brushSize)),
-                      height: Math.min(36, Math.max(8, brushSize)),
-                      backgroundColor: currentTool === 'eraser' ? '#FFFFFF' : currentColor,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Color Swatches */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {PALETTE.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => {
-                      setCurrentColor(c);
-                      if (currentTool === 'eraser') setCurrentTool('brush');
-                    }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-transform hover:scale-110 shrink-0 ${
-                      currentColor === c && currentTool !== 'eraser'
-                        ? 'border-stone-900 scale-110 shadow-sm'
-                        : 'border-white shadow-2xs'
-                    }`}
-                    style={{ backgroundColor: c }}
-                    title={c}
-                  />
-                ))}
-
-                {/* Custom Color Input */}
-                <label className="relative cursor-pointer ml-1">
-                  <input
-                    type="color"
-                    value={currentColor}
-                    onChange={(e) => {
-                      setCurrentColor(e.target.value);
-                      if (currentTool === 'eraser') setCurrentTool('brush');
-                    }}
-                    className="sr-only"
-                  />
-                  <div 
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-dashed border-stone-400 flex items-center justify-center text-stone-500 hover:scale-110 transition-transform bg-conic-gradient"
-                    title="Özel Renk Seç"
-                  >
-                    <Palette className="w-3.5 h-3.5" />
+                    ))}
                   </div>
-                </label>
+                </div>
+
+                {/* Live color dot */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-400">Seçili Renk:</span>
+                  <div
+                    className="w-7 h-7 rounded-full border-2 border-stone-300 shadow-2xs"
+                    style={{ backgroundColor: currentTool === 'eraser' ? '#FFFFFF' : currentColor }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Stamp choices if Stamp Tool selected */}
+              {currentTool === 'stamp' && (
+                <div className="bg-purple-50/80 border border-purple-200 rounded-2xl p-3 flex items-center gap-2 overflow-x-auto">
+                  <span className="text-xs font-bold text-purple-900 shrink-0">Çıkartma Seç:</span>
+                  <div className="flex items-center gap-2">
+                    {STAMPS.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          setSelectedStamp(s.id);
+                          if (soundEnabled) soundFx.playPop();
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
+                          selectedStamp === s.id
+                            ? 'bg-purple-600 text-white shadow-xs scale-105'
+                            : 'bg-white text-purple-900 hover:bg-purple-100 border border-purple-200'
+                        }`}
+                      >
+                        <span className="text-base">{s.emoji}</span>
+                        <span>{s.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 4: 16 Big Vibrant Color Circles */}
+              <div className="space-y-1.5 border-t border-stone-100 pt-3">
+                <span className="text-xs font-bold text-stone-600 block">Renk Paleti:</span>
+                <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                  {PALETTE.map(item => (
+                    <button
+                      key={item.hex}
+                      onClick={() => {
+                        setCurrentColor(item.hex);
+                        if (currentTool === 'eraser') setCurrentTool('brush');
+                        if (soundEnabled) soundFx.playPop();
+                      }}
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-2xl border-2 transition-all hover:scale-115 active:scale-95 shrink-0 cursor-pointer ${
+                        currentColor === item.hex && currentTool !== 'eraser'
+                          ? 'border-stone-900 scale-110 shadow-md ring-2 ring-stone-900/20'
+                          : 'border-white shadow-2xs'
+                      }`}
+                      style={{ backgroundColor: item.hex }}
+                      title={item.name}
+                    />
+                  ))}
+                </div>
               </div>
 
             </div>
 
-            {/* The Drawing Canvas Box */}
-            <div className="relative bg-white rounded-2xl border-2 border-stone-200/90 shadow-md overflow-hidden aspect-4/3 w-full touch-none select-none">
+            {/* Canvas Box (800x600 high resolution) */}
+            <div className="relative bg-white rounded-3xl border-3 border-stone-300 shadow-md overflow-hidden aspect-4/3 w-full touch-none select-none">
               <canvas
                 ref={canvasRef}
                 onPointerDown={handlePointerDown}
@@ -947,218 +1502,141 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
               />
 
               {/* Watermark in corner */}
-              <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-white/80 backdrop-blur-xs border border-stone-200/60 text-[10px] font-mono text-stone-400 pointer-events-none">
-                {config.daughterName} • Tuvali
-              </div>
-            </div>
-
-            {/* Ready-to-Color Template Starters */}
-            <div className="bg-stone-50 rounded-2xl border border-stone-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-stone-500" />
-                  <span>Boyama İçin Çizim Şablonları</span>
-                </span>
-                <span className="text-[11px] text-stone-400">Şablonu seçip boyamaya başlayın</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button
-                  onClick={() => handleLoadTemplate('kitten')}
-                  className="p-2.5 rounded-xl bg-white border border-stone-200 hover:border-rose-300 hover:bg-rose-50/50 text-left transition-all group flex items-center gap-2"
-                >
-                  <span className="text-xl">🐱</span>
-                  <div>
-                    <div className="text-xs font-semibold text-stone-800">Şirin Kedicik</div>
-                    <div className="text-[10px] text-stone-500">Boyama Şablonu</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleLoadTemplate('house')}
-                  className="p-2.5 rounded-xl bg-white border border-stone-200 hover:border-amber-300 hover:bg-amber-50/50 text-left transition-all group flex items-center gap-2"
-                >
-                  <span className="text-xl">🏠</span>
-                  <div>
-                    <div className="text-xs font-semibold text-stone-800">Masal Evi</div>
-                    <div className="text-[10px] text-stone-500">Bahçe & Güneş</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleLoadTemplate('space')}
-                  className="p-2.5 rounded-xl bg-white border border-stone-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-left transition-all group flex items-center gap-2"
-                >
-                  <span className="text-xl">🚀</span>
-                  <div>
-                    <div className="text-xs font-semibold text-stone-800">Uzay Roketi</div>
-                    <div className="text-[10px] text-stone-500">Yıldızlar & Gezegen</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleLoadTemplate('rainbow')}
-                  className="p-2.5 rounded-xl bg-white border border-stone-200 hover:border-sky-300 hover:bg-sky-50/50 text-left transition-all group flex items-center gap-2"
-                >
-                  <span className="text-xl">🌈</span>
-                  <div>
-                    <div className="text-xs font-semibold text-stone-800">Gökkuşağı</div>
-                    <div className="text-[10px] text-stone-500">Bulutlar & Renkler</div>
-                  </div>
-                </button>
+              <div className="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-white/90 backdrop-blur-xs border border-stone-200 text-xs font-bold text-stone-600 pointer-events-none shadow-2xs">
+                🎨 {config.daughterName}'ın Tuvali
               </div>
             </div>
 
           </div>
 
-          {/* Right Column: AI Magical Transformer Studio (4 Cols) */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* RIGHT: AI Magical Transformation Studio (4 Cols) */}
+          <div className="lg:col-span-4 space-y-5">
             
-            <div className="bg-linear-to-b from-white to-rose-50/30 rounded-2xl border-2 border-rose-200/80 shadow-md p-6 space-y-5">
+            <div className="bg-gradient-to-b from-white via-rose-50/30 to-purple-50/20 rounded-3xl border-2 border-rose-300 shadow-md p-5 sm:p-6 space-y-5">
               
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 uppercase tracking-wider">
+                <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-700 uppercase tracking-wider">
                   <Wand2 className="w-4 h-4 text-rose-600 animate-pulse" />
-                  <span>Sihirli Dönüştürücü</span>
+                  <span>Yapay Zeka Sihirbazı</span>
                 </div>
-                <h2 className="text-xl font-display font-bold text-stone-900">
-                  Hayali Gerçek Resme Çevir
+                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-stone-900">
+                  Çizileni Gerçek Resme Dönüştür!
                 </h2>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Çocuğun çizdiği çizgileri analiz edip hayalindeki o muazzam illüstrasyonu yapay zeka ile canlandırın!
+                  Çocuğunun tuvale çizdiği çizgileri, boyaları ve renkleri yapay zeka inceler; seçtiğin sanat tarzında muhteşem bir illüstrasyona dönüştürür.
                 </p>
               </div>
 
-              {/* Prompt Input */}
+              {/* Quick Inspiration Buttons for 4-year-olds */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-stone-700">
-                  Çocuğun Hayalindeki Fikir / Açıklama:
+                  Ne Çizdin? (Hızlıca Dokun):
                 </label>
-                <textarea
-                  rows={2}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {INSPIRATION_IDEAS.map((idea, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setPrompt(idea.text);
+                        if (soundEnabled) soundFx.playPop();
+                      }}
+                      className={`text-left p-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                        prompt === idea.text
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-xs'
+                          : 'bg-white hover:bg-rose-50 text-stone-700 border-stone-200'
+                      }`}
+                    >
+                      {idea.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional Custom Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-stone-700">
+                  Veya Kendi Hayalini Yaz:
+                </label>
+                <input
+                  type="text"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Örn: 'Gökkuşağının üstünde kayan sevimli kedi' (İsteğe bağlı, boş bırakılırsa çizimden algılanır)"
-                  className="w-full text-xs p-3 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 leading-relaxed shadow-2xs"
+                  placeholder="Örn: 'Gökkuşağında dans eden kedicik' (İsteğe bağlı)"
+                  className="w-full text-xs p-3 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 shadow-2xs"
                 />
-
-                {/* Quick Inspiration Chips */}
-                <div className="space-y-1 pt-1">
-                  <span className="text-[11px] font-semibold text-stone-500">Hızlı Fikir Seç:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {INSPIRATION_IDEAS.slice(0, 3).map((idea, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setPrompt(idea)}
-                        className="text-[10px] px-2 py-1 bg-stone-100 hover:bg-rose-100 hover:text-rose-900 text-stone-600 rounded-md transition-colors text-left"
-                      >
-                        {idea}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Art Style Selector */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-stone-700">
-                  İllüstrasyon Tarzı:
+                  Hangi Tarzda Gerçekleşsin?
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  
-                  <button
-                    onClick={() => setStyle('storybook')}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      style === 'storybook'
-                        ? 'border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-2xs'
-                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                    }`}
-                  >
-                    <div className="text-base mb-1">📖</div>
-                    <div className="text-xs">Masal Kitabı</div>
-                    <div className="text-[10px] text-stone-500 font-normal">Sıcak, canlı masal</div>
-                  </button>
-
-                  <button
-                    onClick={() => setStyle('pixar_3d')}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      style === 'pixar_3d'
-                        ? 'border-indigo-500 bg-indigo-50/70 text-indigo-950 font-semibold shadow-2xs'
-                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                    }`}
-                  >
-                    <div className="text-base mb-1">🧸</div>
-                    <div className="text-xs">3D Animasyon</div>
-                    <div className="text-[10px] text-stone-500 font-normal">Pixar film karakteri</div>
-                  </button>
-
-                  <button
-                    onClick={() => setStyle('watercolor')}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      style === 'watercolor'
-                        ? 'border-teal-500 bg-teal-50/70 text-teal-950 font-semibold shadow-2xs'
-                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                    }`}
-                  >
-                    <div className="text-base mb-1">🎨</div>
-                    <div className="text-xs">Büyülü Suluboya</div>
-                    <div className="text-[10px] text-stone-500 font-normal">Rüya gibi boya akışı</div>
-                  </button>
-
-                  <button
-                    onClick={() => setStyle('realistic')}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      style === 'realistic'
-                        ? 'border-amber-500 bg-amber-50/70 text-amber-950 font-semibold shadow-2xs'
-                        : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
-                    }`}
-                  >
-                    <div className="text-base mb-1">📸</div>
-                    <div className="text-xs">Gerçekçi Doğa</div>
-                    <div className="text-[10px] text-stone-500 font-normal">Canlı foto-detay</div>
-                  </button>
-
+                  {[
+                    { id: 'storybook', emoji: '📖', title: 'Masal Kitabı', desc: 'Sıcak & rengarenk' },
+                    { id: 'pixar_3d', emoji: '🧸', title: '3D Animasyon', desc: 'Pixar film tarzı' },
+                    { id: 'watercolor', emoji: '🎨', title: 'Sulu Boya', desc: 'Büyülü & akıcı' },
+                    { id: 'claymation', emoji: '🧁', title: 'Oyun Hamuru', desc: 'Sevimli plastisin' },
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        setStyle(s.id as any);
+                        if (soundEnabled) soundFx.playPop();
+                      }}
+                      className={`p-2.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                        style === s.id
+                          ? 'border-rose-500 bg-rose-50 text-rose-950 font-bold shadow-2xs scale-102'
+                          : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-700'
+                      }`}
+                    >
+                      <div className="text-xl mb-0.5">{s.emoji}</div>
+                      <div className="text-xs font-bold">{s.title}</div>
+                      <div className="text-[10px] text-stone-500 font-normal">{s.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Big Transformation CTA Button */}
+              {/* Giant Pulsating Magical Transform Button */}
               <button
                 onClick={handleTransform}
                 disabled={isTransforming}
-                className="w-full py-3.5 px-4 rounded-xl bg-linear-to-r from-rose-500 via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-98"
+                className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-98"
               >
                 {isTransforming ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-rose-200" />
-                    <span>Dönüştürülüyor...</span>
+                    <RefreshCw className="w-5 h-5 animate-spin text-rose-200" />
+                    <span>Sihirli Dönüştürülüyor...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>✨ Hayalimi Gerçek Resme Dönüştür!</span>
+                    <Sparkles className="w-5 h-5 text-amber-300 animate-bounce" />
+                    <span>✨ Çizimimi Gerçek Resme Dönüştür!</span>
                   </>
                 )}
               </button>
 
               {/* Progress message during transformation */}
               {isTransforming && (
-                <div className="p-3 bg-rose-50/80 rounded-xl border border-rose-200 text-center space-y-2 animate-fade-in">
-                  <div className="text-xs font-semibold text-rose-900">{transformProgress}</div>
-                  <div className="w-full bg-rose-200 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-rose-500 h-1.5 rounded-full animate-pulse w-3/4"></div>
+                <div className="p-3.5 bg-rose-50 rounded-2xl border border-rose-200 text-center space-y-2 animate-pulse">
+                  <div className="text-xs font-bold text-rose-900">{transformProgress}</div>
+                  <div className="w-full bg-rose-200 rounded-full h-2 overflow-hidden">
+                    <div className="bg-rose-500 h-2 rounded-full w-3/4 animate-pulse"></div>
                   </div>
                 </div>
               )}
 
             </div>
 
-            {/* Quick Tips Box */}
-            <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 space-y-1.5">
-              <div className="font-bold flex items-center gap-1.5">
+            {/* Friendly Kid Tip */}
+            <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-4 text-xs text-amber-900 space-y-1 shadow-2xs">
+              <div className="font-bold flex items-center gap-1.5 text-amber-800">
                 <Smile className="w-4 h-4 text-amber-600" />
-                <span>Eğlenceli İpucu:</span>
+                <span>4 Yaş İpucu:</span>
               </div>
               <p className="leading-relaxed">
-                Çocuğunuz sadece birkaç renkli daire veya basit çöp adamlar çizse bile sorun değil! Sihirli dönüştürücü o renkleri ve kompozisyonu baz alarak çocuğun zihnindeki gerçek sahneyi üretir.
+                Kedi şablonunu seçip <strong>"Sihirli Kova"</strong> ile içini dilediğin renkle doldurabilirsin! Çizimin bittiğinde üstteki sihirli butona bas ve gerçek resmi gör!
               </p>
             </div>
 
@@ -1166,51 +1644,71 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
         </div>
 
-        {/* TRANSFORMATION RESULT SECTION (When available) */}
+        {/* TRANSFORMATION RESULT SECTION (Appears smoothly after transforming) */}
         {transformResult && (
-          <div className="mt-12 bg-white rounded-3xl border-2 border-rose-200 shadow-xl overflow-hidden p-6 sm:p-8 space-y-8 animate-fade-in">
+          <div className="mt-8 bg-white rounded-3xl border-3 border-rose-300 shadow-xl overflow-hidden p-6 sm:p-8 space-y-6 animate-fade-in">
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-6">
+            {/* Header: Title and Download Options */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Dönüştürme Tamamlandı!</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold mb-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Sihirli Dönüştürme Tamamlandı! ✨</span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-display font-bold text-stone-900">
+                <h3 className="text-2xl sm:text-3xl font-display font-black text-stone-900">
                   {transformResult.title}
                 </h3>
               </div>
 
-              {transformResult.transformed && (
-                <div className="flex items-center gap-2">
-                  <a
-                    href={transformResult.transformed}
-                    download="nisan-aydin-hayal-illustrasyonu.png"
-                    className="px-4 py-2 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+              {/* Mode toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="bg-stone-100 p-1 rounded-2xl flex items-center gap-1">
+                  <button
+                    onClick={() => setViewMode('slider')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      viewMode === 'slider' ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>İllüstrasyonu İndir</span>
-                  </a>
+                    ↔ Kaydırıcı
+                  </button>
+                  <button
+                    onClick={() => setViewMode('side-by-side')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      viewMode === 'side-by-side' ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    ⊞ Yan Yana
+                  </button>
+                  <button
+                    onClick={() => setViewMode('certificate')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      viewMode === 'certificate' ? 'bg-amber-400 text-amber-950 shadow-2xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    🏆 Sanat Sertifikası
+                  </button>
                 </div>
-              )}
+
+                <a
+                  href={transformResult.transformed}
+                  download="nisan-aydin-hayal-illustrasyonu.png"
+                  className="px-4 py-2 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>İndir</span>
+                </a>
+              </div>
             </div>
 
-            {/* Before / After Comparison */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-stone-800 flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-rose-500" />
-                  <span>Çocuğun Çizimi & Gerçek Resim Karşılaştırması</span>
-                </span>
-                <span className="text-xs text-stone-500 font-mono">
-                  {transformResult.transformed ? 'Ortadaki kaydırıcıyı sağa-sola çekin' : 'Çizim Analizi'}
-                </span>
-              </div>
-
-              {transformResult.transformed ? (
-                /* Interactive Split Slider */
+            {/* VIEW MODE 1: Interactive Split Slider */}
+            {viewMode === 'slider' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-stone-500 font-semibold px-1">
+                  <span>🎨 {config.daughterName}'ın Çizimi</span>
+                  <span>✨ Gerçek Masal İllüstrasyonu (Ortadaki çubuğu kaydırın)</span>
+                </div>
                 <div 
-                  className="relative w-full max-w-4xl mx-auto aspect-4/3 rounded-2xl overflow-hidden shadow-lg border border-stone-200 select-none cursor-ew-resize"
+                  className="relative w-full max-w-4xl mx-auto aspect-4/3 rounded-3xl overflow-hidden shadow-lg border-2 border-stone-200 select-none cursor-ew-resize"
                   onPointerDown={(e) => {
                     setIsDraggingSlider(true);
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -1223,17 +1721,17 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                   }}
                   onPointerUp={() => setIsDraggingSlider(false)}
                 >
-                  {/* Background: Transformed Real Illustration */}
+                  {/* Background: Real Masterpiece */}
                   <img
                     src={transformResult.transformed}
                     alt="Dönüştürülmüş Gerçek İllüstrasyon"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div className="absolute top-4 right-4 px-3 py-1 bg-stone-900/80 backdrop-blur-xs text-white text-xs font-semibold rounded-lg shadow-sm">
+                  <div className="absolute top-4 right-4 px-3 py-1.5 bg-stone-900/85 backdrop-blur-xs text-white text-xs font-extrabold rounded-xl shadow-md">
                     ✨ Hayalindeki Gerçek Resim
                   </div>
 
-                  {/* Foreground: Child's Original Drawing (Clipped) */}
+                  {/* Foreground: Child's original drawing clipped */}
                   <div
                     className="absolute inset-0 overflow-hidden"
                     style={{ width: `${sliderPos}%` }}
@@ -1244,65 +1742,122 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                       className="absolute inset-0 w-full h-full object-cover max-w-none"
                       style={{ width: '100%', height: '100%' }}
                     />
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-xs text-stone-900 text-xs font-semibold rounded-lg shadow-sm border border-stone-200">
-                      🎨 Nisan'ın Çizimi
+                    <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/95 backdrop-blur-xs text-stone-900 text-xs font-extrabold rounded-xl shadow-md border border-stone-200">
+                      🎨 {config.daughterName}'ın Çizimi
                     </div>
                   </div>
 
-                  {/* Divider line and handle */}
+                  {/* Divider line and circular handle */}
                   <div
-                    className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize flex items-center justify-center pointer-events-none"
+                    className="absolute top-0 bottom-0 w-1.5 bg-white shadow-2xl cursor-ew-resize flex items-center justify-center pointer-events-none"
                     style={{ left: `${sliderPos}%` }}
                   >
-                    <div className="w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-500 flex items-center justify-center text-rose-600 text-xs font-bold">
+                    <div className="w-10 h-10 rounded-full bg-white shadow-xl border-3 border-rose-500 flex items-center justify-center text-rose-600 font-extrabold text-sm">
                       ↔
                     </div>
                   </div>
                 </div>
-              ) : (
-                /* Static Side by Side with Drawing */
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-stone-50 rounded-2xl border border-stone-200 p-4 space-y-2">
-                    <span className="text-xs font-bold text-stone-600 block">🎨 Nisan'ın Çizimi:</span>
+              </div>
+            )}
+
+            {/* VIEW MODE 2: Side-by-Side comparison */}
+            {viewMode === 'side-by-side' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                <div className="bg-stone-50 rounded-3xl border-2 border-stone-200 p-4 space-y-2">
+                  <span className="text-xs font-bold text-stone-700 block">🎨 {config.daughterName}'ın Çizimi:</span>
+                  <img
+                    src={transformResult.original}
+                    alt="Çizim"
+                    className="w-full rounded-2xl border border-stone-200 bg-white aspect-4/3 object-contain shadow-xs"
+                  />
+                </div>
+                <div className="bg-rose-50/60 rounded-3xl border-2 border-rose-200 p-4 space-y-2">
+                  <span className="text-xs font-bold text-rose-800 block">✨ Gerçekleşen Masal Resmi:</span>
+                  <img
+                    src={transformResult.transformed}
+                    alt="İllüstrasyon"
+                    className="w-full rounded-2xl border border-rose-200 bg-white aspect-4/3 object-cover shadow-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* VIEW MODE 3: Art Masterpiece Certificate */}
+            {viewMode === 'certificate' && (
+              <div className="max-w-3xl mx-auto bg-gradient-to-br from-amber-50 via-white to-amber-50/80 rounded-3xl border-4 border-amber-300 p-6 sm:p-8 shadow-xl space-y-6 text-center">
+                <div className="flex items-center justify-center gap-2 text-amber-700">
+                  <Award className="w-8 h-8 text-amber-500 animate-bounce" />
+                  <h4 className="text-xl sm:text-2xl font-display font-black uppercase tracking-wider text-amber-900">
+                    Küçük Sanatçı Başarı Sertifikası
+                  </h4>
+                  <Award className="w-8 h-8 text-amber-500 animate-bounce" />
+                </div>
+                <p className="text-xs sm:text-sm text-stone-600 font-serif italic max-w-lg mx-auto">
+                  "Bu sertifika, hayal gücünü ve renklerini tuvale sevgiyle aktaran biricik kızımız {config.daughterName} için gururla hazırlanmıştır."
+                </p>
+
+                <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+                  <div className="space-y-1">
                     <img
                       src={transformResult.original}
                       alt="Çizim"
-                      className="w-full rounded-xl border border-stone-200 bg-white aspect-4/3 object-contain"
+                      className="w-full rounded-2xl border-2 border-amber-200 aspect-square object-cover shadow-xs"
                     />
+                    <span className="text-[11px] font-bold text-stone-600">Özgün Çizim</span>
                   </div>
-                  <div className="bg-rose-50/60 rounded-2xl border border-rose-200 p-6 flex flex-col justify-center space-y-4">
-                    <span className="text-xs font-bold text-rose-800 uppercase tracking-wider block">
-                      ✨ Yapay Zeka Çizim Yorumu:
-                    </span>
-                    <h4 className="text-xl font-display font-bold text-stone-900">
-                      "{transformResult.title}"
-                    </h4>
-                    <p className="text-sm text-stone-700 leading-relaxed italic font-serif">
-                      "{transformResult.story}"
-                    </p>
-                    <div className="p-3 bg-white rounded-xl border border-rose-200 text-xs text-rose-900 font-semibold">
-                      ❤️ {transformResult.praise}
-                    </div>
+                  <div className="space-y-1">
+                    <img
+                      src={transformResult.transformed}
+                      alt="Masal"
+                      className="w-full rounded-2xl border-2 border-amber-400 aspect-square object-cover shadow-xs"
+                    />
+                    <span className="text-[11px] font-bold text-amber-800">Gerçekleşen Hayal ✨</span>
                   </div>
                 </div>
-              )}
 
-            </div>
-
-            {/* Story & Praise Box */}
-            {transformResult.story && transformResult.transformed && (
-              <div className="bg-stone-50 rounded-2xl border border-stone-200 p-6 space-y-3">
-                <div className="text-xs font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>Bu Resmin Hikayesi:</span>
+                <div className="p-4 bg-white rounded-2xl border border-amber-200 text-stone-800 space-y-1 max-w-lg mx-auto">
+                  <div className="text-sm font-bold text-stone-900">"{transformResult.title}"</div>
+                  <div className="text-xs text-stone-600 italic">"{transformResult.story}"</div>
                 </div>
-                <p className="text-base font-serif italic text-stone-700 leading-relaxed">
+
+                <div className="text-[11px] text-stone-400 font-mono">
+                  Tarih: {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} • {config.daughterName} Dünyası
+                </div>
+              </div>
+            )}
+
+            {/* Personalized Fairy Tale & Voice Reading */}
+            {transformResult.story && (
+              <div className="bg-stone-50 rounded-3xl border-2 border-stone-200 p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="text-xs font-extrabold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Bu Çizimin Masalı:</span>
+                  </div>
+
+                  {/* Listen button */}
+                  <button
+                    onClick={handleReadStory}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs ${
+                      isSpeakingStory
+                        ? 'bg-rose-500 text-white animate-pulse'
+                        : 'bg-white hover:bg-stone-100 text-stone-800 border border-stone-200'
+                    }`}
+                  >
+                    <Volume2 className="w-4 h-4 text-rose-500" />
+                    <span>{isSpeakingStory ? 'Masal Okunuyor... 🔊 (Durdur)' : '🎙️ Masalı Sesli Dinle'}</span>
+                  </button>
+                </div>
+
+                <p className="text-base sm:text-lg font-serif italic text-stone-800 leading-relaxed">
                   "{transformResult.story}"
                 </p>
+
                 {transformResult.praise && (
-                  <p className="text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3 inline-block">
-                    🌟 <strong>Övgü:</strong> {transformResult.praise}
-                  </p>
+                  <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900 flex items-center gap-2">
+                    <span className="text-lg">🌟</span>
+                    <span>{transformResult.praise}</span>
+                  </div>
                 )}
               </div>
             )}
@@ -1314,14 +1869,14 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         <div className="mt-16 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
             <div>
-              <h3 className="text-xl sm:text-2xl font-display font-bold text-stone-900">
+              <h3 className="text-xl sm:text-2xl font-display font-extrabold text-stone-900">
                 Hayal Arşivi & Galeri
               </h3>
               <p className="text-xs text-stone-500">
-                {config.daughterName}'ın daha önce boyadığı ve canlandırdığı hayal dünyası eserleri
+                {config.daughterName}'ın boyadığı ve canlandırdığı tüm sevimli eserler
               </p>
             </div>
-            <span className="text-xs font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200">
+            <span className="text-xs font-bold text-rose-700 bg-rose-50 px-3.5 py-1.5 rounded-full border border-rose-200 shadow-2xs">
               {savedCreations.length} Eser Kayıtlı
             </span>
           </div>
@@ -1330,7 +1885,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
             {savedCreations.map((item) => (
               <div 
                 key={item.id}
-                className="bg-white rounded-2xl border border-stone-200 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col group"
+                className="bg-white rounded-3xl border-2 border-stone-200 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col group"
               >
                 {/* Images Preview: Child vs Real */}
                 <div className="relative aspect-4/3 grid grid-cols-2 border-b border-stone-100 overflow-hidden bg-stone-100">
@@ -1340,7 +1895,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                       alt="Çocuk Çizimi"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
-                    <span className="absolute bottom-1.5 left-1.5 text-[9px] bg-black/60 text-white px-1.5 py-0.5 rounded font-mono">
+                    <span className="absolute bottom-2 left-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded-md font-mono">
                       Çizim
                     </span>
                   </div>
@@ -1350,7 +1905,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                       alt="Gerçek İllüstrasyon"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
-                    <span className="absolute bottom-1.5 right-1.5 text-[9px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-mono">
+                    <span className="absolute bottom-2 right-2 text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-md font-mono">
                       Hayal ✨
                     </span>
                   </div>
@@ -1361,11 +1916,11 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                   <div>
                     <div className="flex items-center justify-between text-[11px] text-stone-400 font-mono mb-1">
                       <span>{item.date}</span>
-                      <span className="px-2 py-0.5 bg-stone-100 rounded text-stone-600 capitalize">
+                      <span className="px-2 py-0.5 bg-stone-100 rounded-md text-stone-600 capitalize font-bold">
                         {item.style}
                       </span>
                     </div>
-                    <h4 className="font-bold text-stone-900 text-sm group-hover:text-rose-600 transition-colors">
+                    <h4 className="font-extrabold text-stone-900 text-sm group-hover:text-rose-600 transition-colors">
                       {item.title}
                     </h4>
                     {item.story && (
@@ -1387,7 +1942,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                         });
                         window.scrollTo({ top: 750, behavior: 'smooth' });
                       }}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                      className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Büyük Gör & Kıyasla</span>
@@ -1399,7 +1954,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
                       className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
                       title="İndir"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                     </a>
                   </div>
                 </div>
