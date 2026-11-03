@@ -456,8 +456,8 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const rainbowHue = useRef<number>(0);
 
-  // Template modal state
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  // Directly selected on-screen template (default to blank canvas)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('blank');
 
   // Undo / Redo history
   const [history, setHistory] = useState<string[]>([]);
@@ -934,7 +934,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     const dataUrl = canvas.toDataURL('image/png');
     setHistory([dataUrl]);
     setHistoryStep(0);
-    setIsTemplateModalOpen(false);
+    setSelectedTemplate(templateType);
 
     if (soundEnabled) soundFx.playSuccess();
   }, [soundEnabled]);
@@ -1017,6 +1017,8 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setPrompt('Rengarenk, neşeli, hayal gücü dolu çocuk çizimi');
+    setSelectedTemplate('blank');
+    setCurrentTool('brush');
     pushHistory();
     if (soundEnabled) soundFx.playPop();
   };
@@ -1281,28 +1283,20 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         {/* Row 1: Actions, Tools, Clear All & Magic Transform */}
         <div className="h-12 sm:h-14 px-2 sm:px-4 flex items-center justify-between gap-1.5 border-b border-stone-100 overflow-x-auto no-scrollbar">
           
-          {/* Left Actions: Home & Template Chooser */}
+          {/* Left Actions: Home / Exit */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button 
               onClick={() => onNavigate('/')} 
-              className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
               title="Ana Sayfaya Dön"
             >
               <ArrowLeft className="w-4 h-4 text-white" />
               <span className="hidden sm:inline">Çıkış</span>
             </button>
-
-            <button
-              onClick={() => {
-                setIsTemplateModalOpen(true);
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
-              title="Boyama Resimleri ve Şablonlar"
-            >
-              <span className="text-sm sm:text-base">🎨</span>
-              <span className="hidden xs:inline">Şablonlar</span>
-            </button>
+            <div className="hidden lg:flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100/90 border border-amber-200/80 px-2 py-1 rounded-xl">
+              <span>🎨</span>
+              <span>Sihirli Boyama</span>
+            </div>
           </div>
 
           {/* Center Tools: Brush, Bucket, Crayon, Rainbow, Glitter, Stamp, Eraser */}
@@ -1617,43 +1611,34 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         </div>
       </main>
 
-      {/* TEMPLATE PICKER MODAL (8 Closed-boundary coloring pictures) */}
-      {isTemplateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <div>
-                <h3 className="text-lg sm:text-xl font-display font-black text-stone-900 flex items-center gap-2">
-                  <span>🎨 Boyama Resmi Seç</span>
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Tüm köşeleri kapalı, kutu boyamayla taşmayan gerçek boyama resimleri!
-                </p>
-              </div>
-              <button
-                onClick={() => setIsTemplateModalOpen(false)}
-                className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 overflow-y-auto p-1 flex-1">
-              {TEMPLATE_CARDS.map(card => (
-                <button
-                  key={card.id}
-                  onClick={() => handleLoadTemplate(card.id)}
-                  className="p-3 rounded-2xl border-2 border-stone-200 hover:border-rose-400 bg-stone-50 hover:bg-rose-50/60 transition-all text-center flex flex-col items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-2xs hover:shadow-sm"
-                >
-                  <span className="text-4xl mb-1">{card.emoji}</span>
-                  <span className="font-extrabold text-xs sm:text-sm text-stone-800">{card.title}</span>
-                  <span className="text-[10px] text-stone-400">{card.subtitle}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* DIRECT ON-SCREEN TEMPLATE SELECTOR (NO POPUP - 1-CLICK INSTANT ACCESS) */}
+      <footer className="shrink-0 bg-white/95 backdrop-blur-md border-t-2 border-stone-200 px-2 sm:px-4 py-1.5 sm:py-2 z-20 shadow-xs flex items-center gap-2 overflow-hidden select-none">
+        <div className="flex items-center gap-1 shrink-0 text-stone-700 font-extrabold text-xs pl-1">
+          <span className="text-base sm:text-lg">🎨</span>
+          <span className="font-black text-stone-800">Şablonlar:</span>
         </div>
-      )}
+
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar touch-pan-x py-0.5 flex-1">
+          {TEMPLATE_CARDS.map(card => {
+            const isSelected = selectedTemplate === card.id;
+            return (
+              <button
+                key={card.id}
+                onClick={() => handleLoadTemplate(card.id)}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border-2 transition-all shrink-0 cursor-pointer select-none active:scale-95 ${
+                  isSelected
+                    ? 'bg-rose-50 border-rose-500 text-rose-950 font-black shadow-xs ring-2 ring-rose-400/30 scale-105'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700 hover:border-stone-300 font-bold'
+                }`}
+                title={card.subtitle}
+              >
+                <span className="text-lg sm:text-xl">{card.emoji}</span>
+                <span className="text-xs whitespace-nowrap">{card.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </footer>
 
       {/* RESULT & BEFORE/AFTER MODAL (Opens after transform) */}
       {isResultModalOpen && transformResult && (
