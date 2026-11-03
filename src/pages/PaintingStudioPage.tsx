@@ -1463,7 +1463,36 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
         </div>
 
-        {/* Row 2: THE COLOR PALETTE (AT THE TOP) + BRUSH SIZES + SOUND */}
+        {/* Row 2: DIRECT ON-SCREEN TEMPLATES (AT THE TOP) */}
+        <div className="h-11 sm:h-12 px-2 sm:px-4 bg-amber-50/70 border-b border-amber-200/60 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar touch-pan-x select-none">
+          <div className="flex items-center gap-1 shrink-0 text-amber-950 font-black text-xs pl-1">
+            <span className="text-base sm:text-lg">🎨</span>
+            <span className="font-extrabold text-amber-900">Şablonlar:</span>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar touch-pan-x py-0.5 flex-1">
+            {TEMPLATE_CARDS.map(card => {
+              const isSelected = selectedTemplate === card.id;
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => handleLoadTemplate(card.id)}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-xl border-2 transition-all shrink-0 cursor-pointer select-none active:scale-95 ${
+                    isSelected
+                      ? 'bg-rose-500 border-rose-600 text-white font-black shadow-xs ring-2 ring-rose-400/40 scale-105'
+                      : 'bg-white hover:bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-300 font-bold'
+                  }`}
+                  title={card.subtitle}
+                >
+                  <span className="text-base sm:text-lg">{card.emoji}</span>
+                  <span className="text-xs whitespace-nowrap">{card.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Row 3: THE COLOR PALETTE (AT THE TOP) + BRUSH SIZES + SOUND */}
         <div className="h-11 sm:h-12 px-2 sm:px-4 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           
           {/* Left: Brush Thickness selector (4 chunky sizes) */}
@@ -1610,35 +1639,6 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
           </div>
         </div>
       </main>
-
-      {/* DIRECT ON-SCREEN TEMPLATE SELECTOR (NO POPUP - 1-CLICK INSTANT ACCESS) */}
-      <footer className="shrink-0 bg-white/95 backdrop-blur-md border-t-2 border-stone-200 px-2 sm:px-4 py-1.5 sm:py-2 z-20 shadow-xs flex items-center gap-2 overflow-hidden select-none">
-        <div className="flex items-center gap-1 shrink-0 text-stone-700 font-extrabold text-xs pl-1">
-          <span className="text-base sm:text-lg">🎨</span>
-          <span className="font-black text-stone-800">Şablonlar:</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar touch-pan-x py-0.5 flex-1">
-          {TEMPLATE_CARDS.map(card => {
-            const isSelected = selectedTemplate === card.id;
-            return (
-              <button
-                key={card.id}
-                onClick={() => handleLoadTemplate(card.id)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border-2 transition-all shrink-0 cursor-pointer select-none active:scale-95 ${
-                  isSelected
-                    ? 'bg-rose-50 border-rose-500 text-rose-950 font-black shadow-xs ring-2 ring-rose-400/30 scale-105'
-                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700 hover:border-stone-300 font-bold'
-                }`}
-                title={card.subtitle}
-              >
-                <span className="text-lg sm:text-xl">{card.emoji}</span>
-                <span className="text-xs whitespace-nowrap">{card.title}</span>
-              </button>
-            );
-          })}
-        </div>
-      </footer>
 
       {/* RESULT & BEFORE/AFTER MODAL (Opens after transform) */}
       {isResultModalOpen && transformResult && (
