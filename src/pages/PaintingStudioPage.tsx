@@ -17,7 +17,7 @@ interface PaintingStudioPageProps {
 
 type ToolType = 'brush' | 'bucket' | 'rainbow' | 'glitter' | 'crayon' | 'eraser' | 'stamp';
 type ArtStyle = 'storybook' | 'pixar_3d' | 'watercolor' | 'claymation';
-type TemplateId = 'kitten' | 'house' | 'space' | 'butterfly' | 'dino' | 'dolphin' | 'cupcake' | 'car';
+type TemplateId = 'blank' | 'kitten' | 'house' | 'space' | 'butterfly' | 'dino' | 'dolphin' | 'cupcake' | 'car';
 
 interface SavedCreation {
   id: string;
@@ -177,8 +177,9 @@ const STAMPS = [
   },
 ];
 
-// 8 Real coloring book picture templates
+// Real coloring book picture templates + Blank Canvas option
 const TEMPLATE_CARDS: { id: TemplateId; emoji: string; title: string; subtitle: string; prompt: string }[] = [
+  { id: 'blank', emoji: '📄', title: 'Boş Tuval', subtitle: 'Kendi hayalini çiz', prompt: 'Rengarenk, neşeli, hayal gücü dolu çocuk çizimi' },
   { id: 'kitten', emoji: '🐱', title: 'Şirin Kedicik', subtitle: 'Büyük kulaklar & papyon', prompt: 'Sevimli gülümseyen papyonlu yavru kedi' },
   { id: 'house', emoji: '🏠', title: 'Masal Evi', subtitle: 'Pencereler, kapı & güneş', prompt: 'Bahçesinde rengarenk çiçekler olan güneşli masal evi' },
   { id: 'space', emoji: '🚀', title: 'Uzay Roketi', subtitle: 'Pencereler, kanat & yıldızlar', prompt: 'Uzayda gezegenlerin arasında uçan renkli roket' },
@@ -449,7 +450,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('#E11D48');
-  const [currentTool, setCurrentTool] = useState<ToolType>('bucket'); // Default to bucket for immediate coloring fun!
+  const [currentTool, setCurrentTool] = useState<ToolType>('brush'); // Default to free brush for drawing on blank canvas
   const [brushSize, setBrushSize] = useState<number>(20);
   const [selectedStamp, setSelectedStamp] = useState<string>('star');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -468,7 +469,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
   const lastY = useRef<number>(0);
 
   // Transformation states
-  const [prompt, setPrompt] = useState<string>('');
+  const [prompt, setPrompt] = useState<string>('Rengarenk, neşeli, hayal gücü dolu çocuk çizimi');
   const [style, setStyle] = useState<ArtStyle>('storybook');
   const [isTransforming, setIsTransforming] = useState<boolean>(false);
   const [transformProgress, setTransformProgress] = useState<string>('');
@@ -503,7 +504,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     soundFx.voiceEnabled = soundEnabled;
   }, [soundEnabled]);
 
-  // Load an initial coloring template on first mount
+  // Load a coloring template or blank page
   const handleLoadTemplate = useCallback((templateType: TemplateId) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -522,6 +523,12 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     const card = TEMPLATE_CARDS.find(c => c.id === templateType);
     if (card) {
       setPrompt(card.prompt);
+    }
+
+    if (templateType === 'blank') {
+      setCurrentTool('brush');
+    } else {
+      setCurrentTool('bucket');
     }
 
     if (templateType === 'kitten') {
@@ -932,7 +939,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     if (soundEnabled) soundFx.playSuccess();
   }, [soundEnabled]);
 
-  // Initial setup: load kitten template
+  // Initial setup: Clean blank white canvas by default (boş sayfa)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -941,8 +948,15 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     canvas.width = width;
     canvas.height = height;
 
-    handleLoadTemplate('kitten');
-  }, [handleLoadTemplate]);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/png');
+      setHistory([dataUrl]);
+      setHistoryStep(0);
+    }
+  }, []);
 
   const pushHistory = useCallback(() => {
     const canvas = canvasRef.current;
@@ -993,7 +1007,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     if (soundEnabled) soundFx.playGentleBeep(480);
   };
 
-  // Prominent Clear Canvas (Tümünü Sil)
+  // Prominent Clear Canvas (Tümünü Sil -> Tertemiz Boş Sayfa Yapar)
   const handleClear = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1002,6 +1016,7 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setPrompt('Rengarenk, neşeli, hayal gücü dolu çocuk çizimi');
     pushHistory();
     if (soundEnabled) soundFx.playPop();
   };
@@ -1260,88 +1275,305 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       style={{ touchAction: 'none' }}
     >
       
-      {/* COMPACT IMMERSIVE TOP HEADER (Fixed, non-scrolling) */}
-      <header className="h-14 sm:h-16 px-2 sm:px-4 bg-white/95 backdrop-blur-md border-b border-stone-200 flex items-center justify-between shrink-0 z-20 shadow-xs">
+      {/* TOP SECTION: COLOR PALETTE + TOOL CONTROLS (Boyama Siteleri Tarzı Üst Panel) */}
+      <header className="shrink-0 bg-white/95 backdrop-blur-md border-b-2 border-stone-200 z-30 shadow-xs flex flex-col">
         
-        {/* Left: Back button to home */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <button 
-            onClick={() => onNavigate('/')} 
-            className="group flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
-            title="Ana Sayfaya Dön"
-          >
-            <ArrowLeft className="w-4 h-4 text-white group-hover:-translate-x-0.5 transition-transform" />
-            <span className="hidden sm:inline">Ana Sayfa</span>
-            <span className="sm:hidden">Geri</span>
-          </button>
+        {/* Row 1: Actions, Tools, Clear All & Magic Transform */}
+        <div className="h-12 sm:h-14 px-2 sm:px-4 flex items-center justify-between gap-1.5 border-b border-stone-100 overflow-x-auto no-scrollbar">
+          
+          {/* Left Actions: Home & Template Chooser */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <button 
+              onClick={() => onNavigate('/')} 
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
+              title="Ana Sayfaya Dön"
+            >
+              <ArrowLeft className="w-4 h-4 text-white" />
+              <span className="hidden sm:inline">Çıkış</span>
+            </button>
 
-          {/* Template picker button */}
-          <button
-            onClick={() => {
-              setIsTemplateModalOpen(true);
-              if (soundEnabled) soundFx.playPop();
-            }}
-            className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
-            title="Boyama Şablonu Seç"
-          >
-            <span className="text-base sm:text-lg">🎨</span>
-            <span>Resim Seç</span>
-          </button>
+            <button
+              onClick={() => {
+                setIsTemplateModalOpen(true);
+                if (soundEnabled) soundFx.playPop();
+              }}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+              title="Boyama Resimleri ve Şablonlar"
+            >
+              <span className="text-sm sm:text-base">🎨</span>
+              <span className="hidden xs:inline">Şablonlar</span>
+            </button>
+          </div>
+
+          {/* Center Tools: Brush, Bucket, Crayon, Rainbow, Glitter, Stamp, Eraser */}
+          <div className="flex items-center gap-1 sm:gap-1.5 bg-stone-100/90 p-1 rounded-2xl shrink-0">
+            {/* Fırça */}
+            <button
+              onClick={() => {
+                setCurrentTool('brush');
+                if (soundEnabled) soundFx.playPop();
+              }}
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'brush'
+                  ? 'bg-rose-500 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Serbest Fırça"
+            >
+              <Paintbrush className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Fırça</span>
+            </button>
+
+            {/* Sihirli Kova (Kutu Boya - Kapalı Alan Doldur) */}
+            <button
+              onClick={() => {
+                setCurrentTool('bucket');
+                if (soundEnabled) soundFx.playBubble();
+              }}
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'bucket'
+                  ? 'bg-blue-600 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Kutu Boyama (Dokun ve Doldur)"
+            >
+              <PaintBucket className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Kova</span>
+            </button>
+
+            {/* Mum Boya */}
+            <button
+              onClick={() => {
+                setCurrentTool('crayon');
+                if (soundEnabled) soundFx.playPop();
+              }}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'crayon'
+                  ? 'bg-amber-600 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Mum Boya"
+            >
+              <span>🖍️</span>
+              <span className="hidden md:inline">Mum</span>
+            </button>
+
+            {/* Gökkuşağı */}
+            <button
+              onClick={() => {
+                setCurrentTool('rainbow');
+                if (soundEnabled) soundFx.playGentleBeep(600);
+              }}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'rainbow'
+                  ? 'bg-gradient-to-r from-red-500 via-amber-500 to-indigo-600 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Gökkuşağı Kalemi"
+            >
+              <span>🌈</span>
+            </button>
+
+            {/* Işıltı */}
+            <button
+              onClick={() => {
+                setCurrentTool('glitter');
+                if (soundEnabled) soundFx.playGentleBeep(800);
+              }}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'glitter'
+                  ? 'bg-amber-500 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Işıltılı Çizim"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+            </button>
+
+            {/* Damga */}
+            <button
+              onClick={() => {
+                setCurrentTool('stamp');
+                if (soundEnabled) soundFx.playPop();
+              }}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'stamp'
+                  ? 'bg-purple-600 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Şekilli Damgalar"
+            >
+              <span>⭐</span>
+            </button>
+
+            {/* Silgi */}
+            <button
+              onClick={() => {
+                setCurrentTool('eraser');
+                if (soundEnabled) soundFx.playPop();
+              }}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                currentTool === 'eraser'
+                  ? 'bg-stone-900 text-white shadow-md scale-105'
+                  : 'text-stone-700 hover:bg-white/70'
+              }`}
+              title="Silgi"
+            >
+              <span>🧽</span>
+            </button>
+          </div>
+
+          {/* Right Actions: Undo, Redo, Prominent Clear, Magic Transform */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Undo */}
+            <button
+              onClick={handleUndo}
+              disabled={historyStep <= 0}
+              className="p-1.5 sm:p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 cursor-pointer transition-all"
+              title="Geri Al"
+            >
+              <Undo className="w-4 h-4" />
+            </button>
+
+            {/* BIG PROMINENT CLEAR ALL BUTTON */}
+            <button
+              onClick={handleClear}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md border-2 border-rose-700 cursor-pointer transition-all shrink-0"
+              title="Tüm Çizimi Sil ve Boş Sayfa Yap"
+            >
+              <Trash2 className="w-4 h-4 text-white" />
+              <span className="font-bold tracking-tight">Hepsini Sil 🧹</span>
+            </button>
+
+            {/* Magic Transform Button */}
+            <button
+              onClick={handleTransform}
+              disabled={isTransforming}
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-purple-600 via-rose-500 to-amber-500 hover:from-purple-700 hover:to-amber-600 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer transition-all disabled:opacity-50 shrink-0"
+              title="Çizimimi Gerçek Masal Resmine Dönüştür"
+            >
+              {isTransforming ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span className="hidden md:inline">Dönüştürülüyor...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-bounce" />
+                  <span className="hidden sm:inline">✨ Masal Resmi Yap!</span>
+                  <span className="sm:hidden">✨ Sihir!</span>
+                </>
+              )}
+            </button>
+          </div>
+
         </div>
 
-        {/* Center: BIG UNMISSABLE CLEAR BUTTON (Tümünü Sil) */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleClear}
-            className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md border-2 border-rose-700 cursor-pointer transition-all animate-pulse-subtle"
-            title="Tüm Çizimi Sil ve Tertemiz Yap"
-          >
-            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            <span className="tracking-tight">Hepsini Sil 🧹</span>
-          </button>
-        </div>
+        {/* Row 2: THE COLOR PALETTE (AT THE TOP) + BRUSH SIZES + SOUND */}
+        <div className="h-11 sm:h-12 px-2 sm:px-4 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          
+          {/* Left: Brush Thickness selector (4 chunky sizes) */}
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-stone-100 p-0.5 sm:p-1 rounded-xl shrink-0">
+            {[
+              { size: 6, label: '🐣', title: 'İnce Kalem', dot: 'w-1.5 h-1.5' },
+              { size: 14, label: '🦊', title: 'Orta Fırça', dot: 'w-2.5 h-2.5' },
+              { size: 24, label: '🐻', title: 'Kalın Fırça', dot: 'w-3.5 h-3.5' },
+              { size: 40, label: '🐘', title: 'Kocaman Fırça', dot: 'w-5 h-5' },
+            ].map(bs => (
+              <button
+                key={bs.size}
+                onClick={() => {
+                  setBrushSize(bs.size);
+                  if (soundEnabled) soundFx.playPop();
+                }}
+                className={`px-1.5 py-1 sm:px-2 sm:py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  brushSize === bs.size 
+                    ? 'bg-white text-stone-900 shadow-xs border border-stone-200 scale-105' 
+                    : 'text-stone-500 hover:text-stone-800'
+                }`}
+                title={bs.title}
+              >
+                <span>{bs.label}</span>
+                <span 
+                  className={`rounded-full bg-stone-800 hidden xs:inline-block ${bs.dot}`} 
+                />
+              </button>
+            ))}
+          </div>
 
-        {/* Right: Sound toggle and Giant Magical Transform Button */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Center: 16 Chunky Vibrant Color Pots */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar touch-pan-x px-1 py-0.5">
+            {PALETTE.map(item => {
+              const isActive = currentColor === item.hex && currentTool !== 'eraser';
+              return (
+                <button
+                  key={item.hex}
+                  onClick={() => {
+                    setCurrentColor(item.hex);
+                    if (currentTool === 'eraser') setCurrentTool('brush');
+                    if (soundEnabled) soundFx.playBubble();
+                  }}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 transition-all shrink-0 cursor-pointer flex items-center justify-center ${
+                    isActive
+                      ? 'border-white scale-120 shadow-md ring-3 ring-stone-900/40 z-10 -translate-y-0.5'
+                      : 'border-white/80 shadow-2xs hover:scale-110 active:scale-95'
+                  }`}
+                  style={{ backgroundColor: item.hex }}
+                  title={item.name}
+                >
+                  {isActive && (
+                    <span className={`w-2 h-2 rounded-full ${item.hex === '#FFFFFF' || item.hex === '#FDE047' ? 'bg-stone-900' : 'bg-white'}`} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: Sound toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border shadow-2xs cursor-pointer ${
+            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border shadow-2xs shrink-0 cursor-pointer ${
               soundEnabled 
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
                 : 'bg-stone-100 text-stone-600 border-stone-200'
             }`}
             title="Ses Aç / Kapat"
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-stone-400" />}
-            <span className="hidden md:inline">{soundEnabled ? 'Ses Açık' : 'Sessiz'}</span>
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-600" /> : <VolumeX className="w-3.5 h-3.5 text-stone-400" />}
+            <span className="hidden lg:inline">{soundEnabled ? 'Ses' : 'Sessiz'}</span>
           </button>
 
-          <button
-            onClick={handleTransform}
-            disabled={isTransforming}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer transition-all disabled:opacity-50"
-            title="Çizimimi Gerçek Resme Dönüştür"
-          >
-            {isTransforming ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin text-rose-200" />
-                <span className="hidden sm:inline">Dönüştürülüyor...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-amber-300 animate-bounce" />
-                <span className="hidden sm:inline">✨ Sihirli Dönüştür!</span>
-                <span className="sm:hidden">✨ Dönüştür!</span>
-              </>
-            )}
-          </button>
         </div>
+
+        {/* Optional Stamp Ribbon (Only when stamp tool is selected) */}
+        {currentTool === 'stamp' && (
+          <div className="h-9 px-3 bg-purple-50 border-t border-purple-100 flex items-center justify-center gap-2 overflow-x-auto no-scrollbar animate-fade-in">
+            <span className="text-[11px] font-bold text-purple-900 mr-1 hidden sm:inline">Damga Seç:</span>
+            {STAMPS.map(stamp => (
+              <button
+                key={stamp.id}
+                onClick={() => {
+                  setSelectedStamp(stamp.id);
+                  if (soundEnabled) soundFx.playPop();
+                }}
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                  selectedStamp === stamp.id
+                    ? 'bg-purple-600 text-white shadow-xs scale-105'
+                    : 'bg-white/80 text-purple-900 hover:bg-white'
+                }`}
+              >
+                <span>{stamp.emoji}</span>
+                <span className="text-[11px]">{stamp.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
       </header>
 
-      {/* FULL-SCREEN CANVAS VIEWPORT (Locked, non-scrolling, reader-mode) */}
+      {/* FULL-SCREEN CANVAS VIEWPORT: Fits in remaining screen with zero scrolling */}
       <main 
-        className="flex-1 min-h-0 w-full overflow-hidden flex items-center justify-center p-1 sm:p-3 relative touch-none overscroll-none select-none"
+        className="flex-1 min-h-0 w-full overflow-hidden flex items-center justify-center p-1 sm:p-2.5 relative touch-none overscroll-none select-none"
         style={{ touchAction: 'none' }}
       >
         <div className="relative w-full h-full max-w-4xl max-h-full flex items-center justify-center">
@@ -1374,206 +1606,16 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
               e.preventDefault();
               handleEndDrawing();
             }}
-            className="w-full h-full max-h-full max-w-full object-contain aspect-4/3 rounded-2xl border-3 border-stone-300 shadow-md bg-white block touch-none cursor-crosshair"
+            className="w-full h-full max-h-full max-w-full object-contain aspect-4/3 rounded-2xl border-4 border-amber-300/80 shadow-2xl bg-white block touch-none cursor-crosshair"
             style={{ touchAction: 'none' }}
           />
 
-          {/* Watermark in corner */}
-          <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-xl bg-white/90 backdrop-blur-xs border border-stone-200 text-[11px] font-bold text-stone-600 pointer-events-none shadow-2xs">
-            🎨 {config.daughterName} • Tuvali
+          {/* Child Watermark in bottom corner */}
+          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-white/85 backdrop-blur-xs border border-stone-200 text-[10px] font-bold text-stone-500 pointer-events-none shadow-2xs">
+            🎨 {config.daughterName} • Sihirli Tuvali
           </div>
         </div>
       </main>
-
-      {/* IMMERSIVE BOTTOM TOOLBAR (Fixed on mobile & desktop, no page scroll) */}
-      <footer className="shrink-0 bg-white border-t border-stone-200 p-2 sm:p-3 space-y-2 z-20 shadow-lg">
-        
-        {/* Row 1: Tools & Size Selector */}
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-          
-          {/* Tools */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            {/* Sihirli Kova (Kutu Boya - Kapalı Alan Doldur) */}
-            <button
-              onClick={() => {
-                setCurrentTool('bucket');
-                if (soundEnabled) soundFx.playBubble();
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                currentTool === 'bucket'
-                  ? 'bg-blue-600 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-              title="Kutu Boyama (Dokun ve Doldur)"
-            >
-              <PaintBucket className="w-4 h-4" />
-              <span>Sihirli Kova</span>
-            </button>
-
-            {/* Fırça */}
-            <button
-              onClick={() => {
-                setCurrentTool('brush');
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                currentTool === 'brush'
-                  ? 'bg-rose-500 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <Paintbrush className="w-4 h-4" />
-              <span>Fırça</span>
-            </button>
-
-            {/* Gökkuşağı */}
-            <button
-              onClick={() => {
-                setCurrentTool('rainbow');
-                if (soundEnabled) soundFx.playGentleBeep(600);
-              }}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                currentTool === 'rainbow'
-                  ? 'bg-gradient-to-r from-red-500 via-amber-500 to-indigo-600 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <span>🌈</span>
-              <span className="hidden sm:inline">Gökkuşağı</span>
-            </button>
-
-            {/* Mum Boya */}
-            <button
-              onClick={() => {
-                setCurrentTool('crayon');
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                currentTool === 'crayon'
-                  ? 'bg-orange-500 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <span>🖍️</span>
-              <span className="hidden sm:inline">Mum Boya</span>
-            </button>
-
-            {/* Işıltı */}
-            <button
-              onClick={() => {
-                setCurrentTool('glitter');
-                if (soundEnabled) soundFx.playGentleBeep(800);
-              }}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                currentTool === 'glitter'
-                  ? 'bg-amber-500 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-              <span className="hidden sm:inline">Işıltı</span>
-            </button>
-
-            {/* Damga */}
-            <button
-              onClick={() => {
-                setCurrentTool('stamp');
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                currentTool === 'stamp'
-                  ? 'bg-purple-600 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <span>⭐</span>
-              <span className="hidden sm:inline">Damga</span>
-            </button>
-
-            {/* Silgi */}
-            <button
-              onClick={() => {
-                setCurrentTool('eraser');
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                currentTool === 'eraser'
-                  ? 'bg-stone-800 text-white shadow-md scale-105'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              <span>🧽</span>
-              <span className="hidden sm:inline">Silgi</span>
-            </button>
-          </div>
-
-          {/* Sizes & Undo/Redo */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-xl">
-              {[
-                { size: 10, label: '🐣', title: 'İnce' },
-                { size: 20, label: '🦊', title: 'Orta' },
-                { size: 36, label: '🐘', title: 'Kocaman' },
-              ].map(bs => (
-                <button
-                  key={bs.size}
-                  onClick={() => {
-                    setBrushSize(bs.size);
-                    if (soundEnabled) soundFx.playPop();
-                  }}
-                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    brushSize === bs.size ? 'bg-white text-stone-900 shadow-2xs' : 'text-stone-500'
-                  }`}
-                  title={bs.title}
-                >
-                  <span>{bs.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={handleUndo}
-              disabled={historyStep <= 0}
-              className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 cursor-pointer"
-              title="Geri Al"
-            >
-              <Undo className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleRedo}
-              disabled={historyStep >= history.length - 1}
-              className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 cursor-pointer"
-              title="İleri Al"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
-          </div>
-
-        </div>
-
-        {/* Row 2: 16 Big Chunky Color Buttons (Horizontal scrollable on mobile) */}
-        <div className="max-w-4xl mx-auto flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar touch-pan-x">
-          {PALETTE.map(item => (
-            <button
-              key={item.hex}
-              onClick={() => {
-                setCurrentColor(item.hex);
-                if (currentTool === 'eraser') setCurrentTool('bucket');
-                if (soundEnabled) soundFx.playPop();
-              }}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-2xl border-2 transition-all hover:scale-115 active:scale-95 shrink-0 cursor-pointer ${
-                currentColor === item.hex && currentTool !== 'eraser'
-                  ? 'border-stone-900 scale-110 shadow-md ring-2 ring-stone-900/30'
-                  : 'border-white shadow-2xs'
-              }`}
-              style={{ backgroundColor: item.hex }}
-              title={item.name}
-            />
-          ))}
-        </div>
-
-      </footer>
 
       {/* TEMPLATE PICKER MODAL (8 Closed-boundary coloring pictures) */}
       {isTemplateModalOpen && (
