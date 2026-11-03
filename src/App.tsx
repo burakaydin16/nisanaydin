@@ -185,8 +185,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col font-sans selection:bg-rose-100 selection:text-rose-900">
       
-      {/* Multi-Page Navigation Header with clean / paths (Hidden on /oyun for full-screen immersive game) */}
-      {currentRoute !== '/oyun' && (
+      {/* Multi-Page Navigation Header with clean / paths (Hidden on /oyun and /boyama for full-screen immersive studio) */}
+      {currentRoute !== '/oyun' && currentRoute !== '/boyama' && (
         <Navbar
           config={config}
           currentRoute={currentRoute}
