@@ -602,15 +602,33 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     if (soundEnabled) soundFx.playSuccess();
   }, [soundEnabled]);
 
+  // Lock page scrolling and reset scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const origOverflow = document.body.style.overflow;
+    const origOverscroll = document.body.style.overscrollBehavior;
+    const origTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      document.body.style.overscrollBehavior = origOverscroll;
+      document.body.style.touchAction = origTouchAction;
+    };
+  }, []);
+
   // Dynamic canvas sizing to fill 100% of container without letterbox waste
   const resizeCanvasToContainer = useCallback(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const rect = container.getBoundingClientRect();
-    const w = Math.floor(rect.width);
-    const h = Math.floor(rect.height);
+    // Use clientWidth and clientHeight of container (inside borders)
+    const w = Math.floor(container.clientWidth);
+    const h = Math.floor(container.clientHeight);
 
     if (w <= 50 || h <= 50) return;
     if (canvas.width === w && canvas.height === h) return;
@@ -718,20 +736,41 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     if (soundEnabled) soundFx.playPop();
   };
 
-  // Convert client coordinates to canvas internal pixel coordinates
-  const getCanvasCoords = (clientX: number, clientY: number) => {
+  // Convert client coordinates to EXACT canvas internal pixel coordinates (1:1 precision on mobile/tablet)
+  const getCanvasCoords = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: Math.floor((clientX - rect.left) * scaleX),
-      y: Math.floor((clientY - rect.top) * scaleY),
-    };
-  };
+    if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
 
-  const applyToolStyle = (ctx: CanvasRenderingContext2D) => {
+    // Canvas element border offsets if any
+    const borderLeft = canvas.clientLeft || 0;
+    const borderTop = canvas.clientTop || 0;
+
+    // Rendered CSS display dimensions of the bitmap drawing area
+    const displayW = canvas.clientWidth || (rect.width - borderLeft * 2);
+    const displayH = canvas.clientHeight || (rect.height - borderTop * 2);
+
+    if (displayW <= 0 || displayH <= 0) return { x: 0, y: 0 };
+
+    // Coordinate relative to the canvas content box
+    const xInCanvas = clientX - rect.left - borderLeft;
+    const yInCanvas = clientY - rect.top - borderTop;
+
+    // Direct pixel scaling (handles any CSS or subpixel scaling perfectly)
+    const scaleX = canvas.width / displayW;
+    const scaleY = canvas.height / displayH;
+
+    const finalX = Math.round(xInCanvas * scaleX);
+    const finalY = Math.round(yInCanvas * scaleY);
+
+    return {
+      x: Math.max(0, Math.min(canvas.width - 1, finalX)),
+      y: Math.max(0, Math.min(canvas.height - 1, finalY)),
+    };
+  }, []);
+
+  const applyToolStyle = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -757,10 +796,10 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
       ctx.lineWidth = brushSize;
       ctx.globalAlpha = 1.0;
     }
-  };
+  }, [currentTool, currentColor, brushSize]);
 
   // Start Drawing / Filling
-  const handleStartAt = (clientX: number, clientY: number) => {
+  const handleStartAt = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -796,10 +835,10 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
     if (soundEnabled && currentTool === 'rainbow') {
       soundFx.playGentleBeep(520);
     }
-  };
+  }, [currentTool, currentColor, brushSize, selectedStamp, soundEnabled, pushHistory, getCanvasCoords]);
 
   // Move Drawing
-  const handleMoveAt = (clientX: number, clientY: number) => {
+  const handleMoveAt = useCallback((clientX: number, clientY: number) => {
     if (!isDrawing.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -835,14 +874,75 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
 
     lastX.current = x;
     lastY.current = y;
-  };
+  }, [brushSize, currentTool, applyToolStyle, getCanvasCoords]);
 
   // End Drawing
-  const handleEndDrawing = () => {
+  const handleEndDrawing = useCallback(() => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
     pushHistory();
-  };
+  }, [pushHistory]);
+
+  // Unified native Pointer Event binding (Mouse + Touch + Stylus with palm rejection)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let activePointerId: number | null = null;
+
+    const onPointerDown = (e: PointerEvent) => {
+      // Primary touch only (palm rejection)
+      if (!e.isPrimary) return;
+      e.preventDefault();
+      activePointerId = e.pointerId;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {}
+      handleStartAt(e.clientX, e.clientY);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      if (!isDrawing.current && currentTool !== 'brush') return;
+      e.preventDefault();
+      handleMoveAt(e.clientX, e.clientY);
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      e.preventDefault();
+      activePointerId = null;
+      try {
+        if (canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch {}
+      handleEndDrawing();
+    };
+
+    const onPointerCancel = (e: PointerEvent) => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      activePointerId = null;
+      try {
+        if (canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch {}
+      handleEndDrawing();
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp, { passive: false });
+    window.addEventListener('pointercancel', onPointerCancel, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+    };
+  }, [handleStartAt, handleMoveAt, handleEndDrawing, currentTool]);
 
   // AI Transform drawing into real creative illustration
   const handleTransform = async () => {
@@ -1211,38 +1311,14 @@ export const PaintingStudioPage: React.FC<PaintingStudioPageProps> = ({
         className="flex-1 min-h-0 w-full px-2 sm:px-4 pb-2 sm:pb-3 pt-1.5 relative overflow-hidden flex items-center justify-center touch-none overscroll-none select-none"
         style={{ touchAction: 'none' }}
       >
-        <div ref={containerRef} className="w-full h-full relative flex items-center justify-center">
+        <div 
+          ref={containerRef} 
+          className="w-full h-full relative rounded-2xl sm:rounded-3xl border-4 border-amber-300 shadow-xl overflow-hidden bg-white touch-none"
+        >
           <canvas
             ref={canvasRef}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              canvasRef.current?.setPointerCapture(e.pointerId);
-              handleStartAt(e.clientX, e.clientY);
-            }}
-            onPointerMove={(e) => {
-              e.preventDefault();
-              handleMoveAt(e.clientX, e.clientY);
-            }}
-            onPointerUp={(e) => {
-              e.preventDefault();
-              try { canvasRef.current?.releasePointerCapture(e.pointerId); } catch {}
-              handleEndDrawing();
-            }}
-            onPointerCancel={handleEndDrawing}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              if (e.touches[0]) handleStartAt(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchMove={(e) => {
-              e.preventDefault();
-              if (e.touches[0]) handleMoveAt(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              handleEndDrawing();
-            }}
-            className="w-full h-full rounded-2xl sm:rounded-3xl border-4 border-amber-300 shadow-xl bg-white block touch-none cursor-crosshair"
-            style={{ touchAction: 'none' }}
+            className="w-full h-full block touch-none cursor-crosshair"
+            style={{ touchAction: 'none', WebkitTouchCallout: 'none', userSelect: 'none' }}
           />
 
           {/* Child Watermark in bottom corner */}
